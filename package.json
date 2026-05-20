@@ -1,0 +1,20 @@
+{
+  "name": "sphere-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "description": "Sphere core protocol schemas, TypeScript packages, and reference node.",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --pretty",
+    "lint": "pnpm typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
