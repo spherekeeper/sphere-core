@@ -1,0 +1,17 @@
+{
+  "id": "018f0000-0000-7000-8000-000000000040",
+  "chainId": "018f0000-0000-7000-8000-000000000099",
+  "sequence": 0,
+  "actorId": "018f0000-0000-7000-8000-000000000001",
+  "subjectId": "018f0000-0000-7000-8000-000000000001",
+  "action": "entity.create",
+  "resourceType": "entity",
+  "resourceId": "018f0000-0000-7000-8000-000000000001",
+  "timestamp": "2026-05-20T00:00:00.000Z",
+  "payload": {},
+  "reason": null,
+  "schemaVersion": "0.1.0",
+  "hashAlgorithm": "sha256",
+  "previousHash": null,
+  "hash": "placeholder-hash"
+}
