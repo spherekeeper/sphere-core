@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sphere.dev/schemas/draft/0.1.0/edge.schema.json",
+  "title": "Sphere Edge",
+  "type": "object",
+  "required": [
+    "id",
+    "sourceId",
+    "targetId",
+    "type",
+    "metadata",
+    "createdAt",
+    "createdBy",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "trusts",
+            "vouches_for",
+            "endorses",
+            "blocks",
+            "member_of",
+            "admin_of",
+            "moderates",
+            "owns",
+            "founded",
+            "contains",
+            "parent_of",
+            "represents",
+            "delegates_to",
+            "hosted_by"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[A-Za-z0-9_.:-]+$"
+        }
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deletedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "deletedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    }
+  },
+  "additionalProperties": false
+}

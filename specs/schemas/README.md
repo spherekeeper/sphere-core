@@ -1,11 +1,13 @@
 # JSON Schemas
 
-Language-agnostic schema contracts for Sphere primitives.
+Draft JSON Schema 2020-12 contracts for Sphere protocol primitives.
 
-Planned schemas:
+Current schemas:
 
 - `entity.schema.json`
 - `identity-link.schema.json`
 - `edge.schema.json`
 - `event.schema.json`
 - `command.schema.json`
+
+These schemas are unstable until a protocol version is declared stable.

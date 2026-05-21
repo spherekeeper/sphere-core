@@ -1,0 +1,32 @@
+{
+  "id": "018f0000-0000-7000-8000-000000000041",
+  "chainId": "018f0000-0000-7000-8000-000000000099",
+  "sequence": 2,
+  "actorId": "018f0000-0000-7000-8000-000000000001",
+  "subjectId": "018f0000-0000-7000-8000-000000000001",
+  "action": "edge.create",
+  "resourceType": "edge",
+  "resourceId": "018f0000-0000-7000-8000-000000000020",
+  "timestamp": "2026-05-20T00:00:00.000Z",
+  "payload": {
+    "edge": {
+      "id": "018f0000-0000-7000-8000-000000000020",
+      "sourceId": "018f0000-0000-7000-8000-000000000001",
+      "targetId": "018f0000-0000-7000-8000-000000000010",
+      "type": "trusts",
+      "metadata": {
+        "dimensions": {
+          "reliability": 0.8
+        }
+      },
+      "createdAt": "2026-05-20T00:00:00.000Z",
+      "createdBy": "018f0000-0000-7000-8000-000000000001",
+      "schemaVersion": "0.1.0"
+    }
+  },
+  "reason": "example trust declaration",
+  "schemaVersion": "0.1.0",
+  "hashAlgorithm": "sha256",
+  "previousHash": "placeholder-hash",
+  "hash": "placeholder-hash-2"
+}

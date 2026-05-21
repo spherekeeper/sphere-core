@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sphere.dev/schemas/draft/0.1.0/identity-link.schema.json",
+  "title": "Sphere Identity Link",
+  "type": "object",
+  "required": [
+    "id",
+    "entityId",
+    "platform",
+    "platformId",
+    "handle",
+    "verified",
+    "metadata",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entityId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "platform": {
+      "type": "string",
+      "minLength": 1
+    },
+    "platformId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "handle": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    }
+  },
+  "additionalProperties": false
+}

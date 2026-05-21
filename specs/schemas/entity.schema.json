@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sphere.dev/schemas/draft/0.1.0/entity.schema.json",
+  "title": "Sphere Entity",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "name",
+    "metadata",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "person",
+        "agent",
+        "group",
+        "app",
+        "node",
+        "resource"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    }
+  },
+  "additionalProperties": false
+}

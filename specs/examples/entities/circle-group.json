@@ -1,0 +1,11 @@
+{
+  "id": "018f0000-0000-7000-8000-000000000010",
+  "kind": "group",
+  "name": "Example Circle",
+  "metadata": {
+    "kind": "circle"
+  },
+  "createdAt": "2026-05-20T00:00:00.000Z",
+  "updatedAt": "2026-05-20T00:00:00.000Z",
+  "schemaVersion": "0.1.0"
+}

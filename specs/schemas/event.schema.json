@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sphere.dev/schemas/draft/0.1.0/event.schema.json",
+  "title": "Sphere Event",
+  "type": "object",
+  "required": [
+    "id",
+    "chainId",
+    "sequence",
+    "actorId",
+    "subjectId",
+    "action",
+    "resourceType",
+    "resourceId",
+    "timestamp",
+    "payload",
+    "reason",
+    "schemaVersion",
+    "hashAlgorithm",
+    "previousHash",
+    "hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chainId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "actorId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subjectId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "pattern": "^([a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*|custom:[A-Za-z0-9_.:-]+)$"
+    },
+    "resourceType": {
+      "anyOf": [
+        {
+          "enum": [
+            "entity",
+            "identity_link",
+            "edge",
+            "command",
+            "event"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[A-Za-z0-9_.:-]+$"
+        }
+      ]
+    },
+    "resourceId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "hashAlgorithm": {
+      "const": "sha256"
+    },
+    "previousHash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hash": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

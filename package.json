@@ -9,7 +9,7 @@
     "build": "pnpm -r --if-present build",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "typecheck": "tsc -b --pretty",
+    "typecheck": "pnpm --filter @sphere/types typecheck && tsc -p tsconfig.json --noEmit",
     "lint": "pnpm typecheck"
   },
   "devDependencies": {

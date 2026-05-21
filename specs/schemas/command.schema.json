@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sphere.dev/schemas/draft/0.1.0/command.schema.json",
+  "title": "Sphere Command",
+  "type": "object",
+  "required": [
+    "id",
+    "actorId",
+    "action",
+    "resourceType",
+    "resourceId",
+    "payload",
+    "reason",
+    "createdAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actorId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "pattern": "^([a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*|custom:[A-Za-z0-9_.:-]+)$"
+    },
+    "resourceType": {
+      "anyOf": [
+        {
+          "enum": [
+            "entity",
+            "identity_link",
+            "edge",
+            "command",
+            "event"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^custom:[A-Za-z0-9_.:-]+$"
+        }
+      ]
+    },
+    "resourceId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schemaVersion": {
+      "const": "0.1.0"
+    }
+  },
+  "additionalProperties": false
+}
