@@ -1,0 +1,10 @@
+{
+  "description": "Malformed UUIDv7-compatible Sphere IDs that should be rejected by @sphere/ids isId().",
+  "ids": [
+    "",
+    "not-a-uuid",
+    "018f0000-0000-6000-8000-000000000001",
+    "018f0000-0000-7000-c000-000000000001",
+    "018F0000-0000-7000-8000-000000000001"
+  ]
+}

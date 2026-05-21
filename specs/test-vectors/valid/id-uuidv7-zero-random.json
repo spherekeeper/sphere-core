@@ -1,0 +1,7 @@
+{
+  "description": "Deterministic UUIDv7-compatible Sphere ID generated at 2026-05-20T00:00:00.000Z with zeroed random bytes.",
+  "id": "019e42ae-9c00-7000-8000-000000000000",
+  "timestamp": "2026-05-20T00:00:00.000Z",
+  "version": 7,
+  "variant": "rfc4122"
+}
