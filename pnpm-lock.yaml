@@ -18,6 +18,12 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.41)
 
+  packages/events:
+    dependencies:
+      '@sphere/types':
+        specifier: workspace:*
+        version: link:../types
+
   packages/ids: {}
 
   packages/schemas:
