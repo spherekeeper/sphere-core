@@ -8,6 +8,8 @@ import {
   eventHashPayloadJson,
   eventToCanonicalJson,
   eventToCanonicalXml,
+  linkEvent,
+  verifyEventChain,
   verifyEventHash,
   withEventHash,
 } from '../src/index.js';
@@ -45,6 +47,14 @@ const event = {
   previousHash: null,
   hash: 'placeholder-hash',
 };
+
+function expectChainErrorCode(events: Parameters<typeof verifyEventChain>[0], code: string): void {
+  const result = verifyEventChain(events);
+  expect(result.ok).toBe(false);
+  if ('code' in result) {
+    expect(result.code).toBe(code);
+  }
+}
 
 describe('@sphere/events canonical serialization', () => {
   it('serializes JSON deterministically with sorted object keys', () => {
@@ -92,6 +102,49 @@ describe('@sphere/events canonical serialization', () => {
   it('supports fixture-backed event hashes', () => {
     const expectedHash = readFileSync('specs/test-vectors/valid/event-hash-basic.sha256', 'utf8').trimEnd();
     expect(computeEventHash(event)).toBe(expectedHash);
+  });
+
+  it('links and verifies ordered event hash chains', () => {
+    const genesis = withEventHash({ ...event, sequence: 1, previousHash: null });
+    const secondDraft = {
+      ...event,
+      id: '019e42ae-9c00-7000-8000-000000000005',
+      sequence: 2,
+      action: 'edge.create',
+      payload: { edge: { type: 'member_of' } },
+      previousHash: 'will-be-replaced',
+      hash: 'will-be-replaced',
+    };
+    const second = linkEvent(genesis, secondDraft);
+
+    expect(second.previousHash).toBe(genesis.hash);
+    expect(second.hash).toBe(computeEventHash(second));
+    expect(verifyEventChain([genesis, second])).toEqual({ ok: true, events: 2 });
+  });
+
+  it('rejects broken hash chains with useful error codes', () => {
+    const genesis = withEventHash({ ...event, sequence: 1, previousHash: null });
+    const second = linkEvent(genesis, {
+      ...event,
+      id: '019e42ae-9c00-7000-8000-000000000005',
+      sequence: 2,
+      action: 'edge.create',
+    });
+
+    expect(verifyEventChain([])).toEqual({ ok: false, index: -1, code: 'empty_chain', message: 'Event chain is empty' });
+    expectChainErrorCode([{ ...genesis, previousHash: second.hash }, second], 'genesis_previous_hash');
+    expectChainErrorCode([genesis, { ...second, previousHash: 'bad', hash: computeEventHash({ ...second, previousHash: 'bad' }) }], 'previous_hash_mismatch');
+    expectChainErrorCode([genesis, { ...second, sequence: 3, hash: computeEventHash({ ...second, sequence: 3 }) }], 'sequence_mismatch');
+    expectChainErrorCode([genesis, { ...second, chainId: '019e42ae-9c00-7000-8000-000000000098', hash: computeEventHash({ ...second, chainId: '019e42ae-9c00-7000-8000-000000000098' }) }], 'chain_id_mismatch');
+    expectChainErrorCode([genesis, { ...second, action: 'identity.link' }], 'event_hash_mismatch');
+  });
+
+  it('verifies hash-chain fixtures', () => {
+    const validChain = JSON.parse(readFileSync('specs/test-vectors/hash-chain/valid-basic-chain.json', 'utf8'));
+    const brokenPreviousHash = JSON.parse(readFileSync('specs/test-vectors/hash-chain/invalid-broken-previous-hash.json', 'utf8'));
+
+    expect(verifyEventChain(validChain)).toEqual({ ok: true, events: 2 });
+    expectChainErrorCode(brokenPreviousHash, 'previous_hash_mismatch');
   });
 
   it('rejects values that cannot be serialized canonically', () => {

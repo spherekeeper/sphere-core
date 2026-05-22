@@ -1,0 +1,46 @@
+[
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000001",
+    "chainId": "019e42ae-9c00-7000-8000-000000000099",
+    "sequence": 1,
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000003",
+    "action": "entity.create",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000004",
+    "timestamp": "2026-05-20T00:00:00.000Z",
+    "payload": {
+      "entity": {
+        "kind": "group",
+        "name": "Sphere <Core> & Friends"
+      },
+      "hash": "payload-hash-must-remain-in-hash-input"
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": null,
+    "hash": "6a19bd6a2cf3777b9b8307289ca35b63594aae3e9cefe0b729744cdd55903c00"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000005",
+    "chainId": "019e42ae-9c00-7000-8000-000000000099",
+    "sequence": 2,
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000003",
+    "action": "edge.create",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000004",
+    "timestamp": "2026-05-20T00:00:00.000Z",
+    "payload": {
+      "edge": {
+        "type": "member_of"
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "bad",
+    "hash": "6b9af4e9a8d294f4f135d7f153f6979d8e59e4f9d7623c0921dfb94b2b8474c4"
+  }
+]

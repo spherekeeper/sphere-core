@@ -56,6 +56,98 @@ export function verifyEventHash(event: Event | Record<string, unknown>): boolean
   return typeof event.hash === 'string' && event.hash === computeEventHash(event);
 }
 
+export type EventChainErrorCode =
+  | 'empty_chain'
+  | 'genesis_previous_hash'
+  | 'event_hash_mismatch'
+  | 'previous_hash_mismatch'
+  | 'sequence_mismatch'
+  | 'chain_id_mismatch';
+
+export type EventChainVerificationResult =
+  | { ok: true; events: number }
+  | { ok: false; index: number; code: EventChainErrorCode; message: string };
+
+export function linkEvent<T extends Event | Record<string, unknown>>(
+  previousEvent: Event | Record<string, unknown>,
+  nextEvent: T,
+): Omit<T, 'previousHash' | 'hash'> & { previousHash: string; hash: string } {
+  if (typeof previousEvent.hash !== 'string') {
+    throw new TypeError('previousEvent.hash must be a string');
+  }
+
+  const linked = {
+    ...nextEvent,
+    previousHash: previousEvent.hash,
+  };
+
+  return withEventHash(linked) as Omit<T, 'previousHash' | 'hash'> & { previousHash: string; hash: string };
+}
+
+export function verifyEventChain(events: readonly (Event | Record<string, unknown>)[]): EventChainVerificationResult {
+  if (events.length === 0) {
+    return { ok: false, index: -1, code: 'empty_chain', message: 'Event chain is empty' };
+  }
+
+  const [genesis] = events;
+  if (genesis?.previousHash !== null) {
+    return {
+      ok: false,
+      index: 0,
+      code: 'genesis_previous_hash',
+      message: 'Genesis event previousHash must be null',
+    };
+  }
+
+  for (let index = 0; index < events.length; index += 1) {
+    const current = events[index]!;
+
+    if (!verifyEventHash(current)) {
+      return {
+        ok: false,
+        index,
+        code: 'event_hash_mismatch',
+        message: `Event at index ${index} has an invalid hash`,
+      };
+    }
+
+    if (index === 0) {
+      continue;
+    }
+
+    const previous = events[index - 1]!;
+
+    if (current.chainId !== previous.chainId) {
+      return {
+        ok: false,
+        index,
+        code: 'chain_id_mismatch',
+        message: `Event at index ${index} has a different chainId`,
+      };
+    }
+
+    if (typeof current.sequence !== 'number' || current.sequence !== (previous.sequence as number) + 1) {
+      return {
+        ok: false,
+        index,
+        code: 'sequence_mismatch',
+        message: `Event at index ${index} sequence does not follow previous event`,
+      };
+    }
+
+    if (current.previousHash !== previous.hash) {
+      return {
+        ok: false,
+        index,
+        code: 'previous_hash_mismatch',
+        message: `Event at index ${index} previousHash does not match previous event hash`,
+      };
+    }
+  }
+
+  return { ok: true, events: events.length };
+}
+
 function toCanonicalValue(value: unknown, omitKeys: ReadonlySet<string>): JsonValue {
   if (value === null) {
     return null;

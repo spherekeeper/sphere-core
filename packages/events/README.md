@@ -14,8 +14,10 @@ This package currently defines deterministic serialization only:
 - `computeEventHash(event)`
 - `withEventHash(event)`
 - `verifyEventHash(event)`
+- `linkEvent(previousEvent, nextEvent)`
+- `verifyEventChain(events)`
 
-Hash-chain verification will build on top of these helpers in later commits.
+Hash-chain verification is available for ordered event streams.
 
 ## Canonical JSON rules
 
@@ -45,3 +47,13 @@ The XML form is intended as a deterministic interchange/debug representation, no
 - Nested `hash` fields inside `payload` or other child objects are preserved.
 - Hashes are encoded as lowercase hexadecimal strings without an algorithm prefix.
 - The event should set `hashAlgorithm` to `sha256`.
+
+## Hash-chain rules
+
+- A chain is a non-empty ordered event stream.
+- The genesis event must have `previousHash: null`.
+- Every event must have a valid event hash.
+- Every non-genesis event must use the same `chainId` as the previous event.
+- Every non-genesis event must increment `sequence` by exactly one.
+- Every non-genesis event must set `previousHash` to the previous event's `hash`.
+- `verifyEventChain(events)` returns a structured error code instead of throwing.
