@@ -347,4 +347,28 @@ describe('@sphere/graph', () => {
     expect(getIdentityLinksForEntity(graph, entityId)).toEqual([]);
     expect(getIdentityLinkByPlatform(graph, 'discord', '1234567890')).toBeUndefined();
   });
+
+  it('records diagnostics and skips projection for malformed action payloads', () => {
+    const graph = projectEvent(
+      createGraphProjection(),
+      withEventHash(
+        eventWithoutHash({
+          action: 'identity.link',
+          resourceType: 'identity_link',
+          resourceId: '019e42ae-9c00-7000-8000-000000000333',
+          payload: { identityLink: { platform: 'discord' } },
+        }) as unknown as Record<string, unknown>,
+      ) as unknown as Event,
+    );
+
+    expect(getIdentityLink(graph, '019e42ae-9c00-7000-8000-000000000333')).toBeUndefined();
+    expect(getProjectionDiagnostics(graph)).toEqual([
+      expect.objectContaining({
+        code: 'invalid_event_payload',
+        severity: 'error',
+        action: 'identity.link',
+        resourceId: '019e42ae-9c00-7000-8000-000000000333',
+      }),
+    ]);
+  });
 });

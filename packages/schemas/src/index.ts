@@ -88,6 +88,117 @@ function parseWith<T>(kind: string, validator: ValidateFunction<T>, value: unkno
   throw new SphereSchemaValidationError(kind, failure.errors, failure.details);
 }
 
+function validatePayloadForEvent(event: Event): string[] {
+  switch (event.action) {
+    case 'entity.create':
+      return validateEntityCreatePayload(event);
+    case 'entity.update':
+      return validateObjectPayload(event, 'entity');
+    case 'entity.delete':
+      return validateResourceId(event, 'entity');
+    case 'edge.create':
+      return validateEdgeCreatePayload(event);
+    case 'edge.delete':
+      return validateResourceId(event, 'edge');
+    case 'identity.link':
+      return validateIdentityLinkPayload(event);
+    case 'identity.unlink':
+      return validateResourceId(event, 'identity_link');
+    default:
+      return [];
+  }
+}
+
+function validateEntityCreatePayload(event: Event): string[] {
+  const payloadEntity = objectProperty(event.payload, 'entity');
+  if (payloadEntity === undefined) {
+    return ['/payload/entity must be object'];
+  }
+
+  const candidate = {
+    id: stringProperty(payloadEntity, 'id') ?? event.resourceId,
+    kind: stringProperty(payloadEntity, 'kind') ?? 'resource',
+    name: stringProperty(payloadEntity, 'name') ?? event.resourceId,
+    metadata: objectProperty(payloadEntity, 'metadata') ?? {},
+    createdAt: stringProperty(payloadEntity, 'createdAt') ?? event.timestamp,
+    updatedAt: stringProperty(payloadEntity, 'updatedAt') ?? event.timestamp,
+    schemaVersion: event.schemaVersion,
+  };
+  return prefixedErrors('/payload/entity', validateEntity(candidate));
+}
+
+function validateEdgeCreatePayload(event: Event): string[] {
+  const payloadEdge = objectProperty(event.payload, 'edge');
+  if (payloadEdge === undefined) {
+    return ['/payload/edge must be object'];
+  }
+
+  const candidate = {
+    id: stringProperty(payloadEdge, 'id') ?? (event.resourceType === 'edge' ? event.resourceId : event.id),
+    sourceId: stringProperty(payloadEdge, 'sourceId') ?? event.subjectId,
+    targetId: stringProperty(payloadEdge, 'targetId') ?? event.resourceId,
+    type: stringProperty(payloadEdge, 'type') ?? 'custom:unknown',
+    metadata: objectProperty(payloadEdge, 'metadata') ?? {},
+    createdAt: stringProperty(payloadEdge, 'createdAt') ?? event.timestamp,
+    createdBy: stringProperty(payloadEdge, 'createdBy') ?? event.actorId,
+    schemaVersion: event.schemaVersion,
+    deletedAt: nullableStringProperty(payloadEdge, 'deletedAt'),
+    deletedBy: nullableStringProperty(payloadEdge, 'deletedBy'),
+  };
+  return prefixedErrors('/payload/edge', validateEdge(candidate));
+}
+
+function validateIdentityLinkPayload(event: Event): string[] {
+  const payloadLink = objectProperty(event.payload, 'identityLink') ?? objectProperty(event.payload, 'identity_link');
+  if (payloadLink === undefined) {
+    return ['/payload/identityLink must be object'];
+  }
+  return prefixedErrors('/payload/identityLink', validateIdentityLink(payloadLink));
+}
+
+function validateObjectPayload(event: Event, key: string): string[] {
+  return objectProperty(event.payload, key) === undefined ? [`/payload/${key} must be object`] : [];
+}
+
+function validateResourceId(event: Event, expectedResourceType: Event['resourceType']): string[] {
+  const errors: string[] = [];
+  if (event.resourceType !== expectedResourceType) {
+    errors.push(`/resourceType must be ${expectedResourceType}`);
+  }
+  if (typeof event.resourceId !== 'string' || event.resourceId.length === 0) {
+    errors.push('/resourceId must be non-empty string');
+  }
+  return errors;
+}
+
+function prefixedErrors<T>(prefix: string, result: ValidationResult<T>): string[] {
+  if (result.ok) {
+    return [];
+  }
+  const failure = result as Extract<ValidationResult<T>, { ok: false }>;
+  return failure.errors.map((error) => `${prefix}${error.startsWith('/') ? error : ` ${error}`}`);
+}
+
+function objectProperty(value: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+  const property = value[key];
+  return property !== null && typeof property === 'object' && !Array.isArray(property)
+    ? (property as Record<string, unknown>)
+    : undefined;
+}
+
+function stringProperty(value: Record<string, unknown>, key: string): string | undefined {
+  const property = value[key];
+  return typeof property === 'string' ? property : undefined;
+}
+
+function nullableStringProperty(value: Record<string, unknown>, key: string): string | null | undefined {
+  const property = value[key];
+  if (typeof property === 'string' || property === null) {
+    return property as string | null;
+  }
+  return undefined;
+}
+
 export function validateEntity(value: unknown): ValidationResult<Entity> {
   return validateWith(validators.entity, value);
 }
@@ -114,6 +225,21 @@ export function parseEdge(value: unknown): Edge {
 
 export function validateEvent(value: unknown): ValidationResult<Event> {
   return validateWith(validators.event, value);
+}
+
+export function validateEventActionPayload(value: unknown): ValidationResult<Event> {
+  const envelope = validateEvent(value);
+  if (!envelope.ok) {
+    return envelope;
+  }
+
+  const event = envelope.value;
+  const errors = validatePayloadForEvent(event);
+  if (errors.length > 0) {
+    return { ok: false, errors, details: [] };
+  }
+
+  return { ok: true, value: event };
 }
 
 export function parseEvent(value: unknown): Event {

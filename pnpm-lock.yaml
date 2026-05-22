@@ -29,6 +29,9 @@ importers:
       '@sphere/events':
         specifier: workspace:*
         version: link:../events
+      '@sphere/schemas':
+        specifier: workspace:*
+        version: link:../schemas
       '@sphere/types':
         specifier: workspace:*
         version: link:../types

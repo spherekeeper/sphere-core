@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@sphere/events": "workspace:*",
+    "@sphere/schemas": "workspace:*",
     "@sphere/types": "workspace:*"
   }
 }

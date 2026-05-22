@@ -11,6 +11,7 @@ import {
   validateEdge,
   validateEntity,
   validateEvent,
+  validateEventActionPayload,
   validateIdentityLink,
 } from '../src/index.js';
 
@@ -87,5 +88,30 @@ describe('@sphere/schemas', () => {
     expect(validateEdge(invalidEdgeLegacyType).ok).toBe(false);
     expect(validateEvent(invalidEventZeroSequence).ok).toBe(false);
     expect(validateCommand(invalidCommandMissingFields).ok).toBe(false);
+  });
+
+  it('validates known event action payload contracts', () => {
+    expect(validateEventActionPayload(entityCreateEvent).ok).toBe(true);
+    expect(validateEventActionPayload(edgeCreateEvent).ok).toBe(true);
+    expect(validateEventActionPayload({
+      ...entityCreateEvent,
+      action: 'identity.link',
+      resourceType: 'identity_link',
+      payload: { identityLink: discordIdentity },
+    }).ok).toBe(true);
+
+    const invalidIdentityLinkEvent = {
+      ...entityCreateEvent,
+      action: 'identity.link',
+      resourceType: 'identity_link',
+      payload: { identityLink: { platform: 'discord' } },
+    };
+    const result = validateEventActionPayload(invalidIdentityLinkEvent);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      const failure = result as Extract<typeof result, { ok: false }>;
+      expect(failure.errors.join('\n')).toContain('/payload/identityLink');
+    }
   });
 });

@@ -1,4 +1,5 @@
 import { verifyEventChain } from '@sphere/events';
+import { validateEventActionPayload } from '@sphere/schemas';
 import type { Edge, Entity, Event, IdentityLink, JsonObject } from '@sphere/types';
 
 export interface EntityTombstone {
@@ -13,6 +14,7 @@ export type GraphProjectionDiagnosticSeverity = 'info' | 'warning' | 'error';
 
 export type GraphProjectionDiagnosticCode =
   | 'unsupported_action'
+  | 'invalid_event_payload'
   | 'entity_update_missing_entity'
   | 'entity_update_tombstoned_entity'
   | 'edge_delete_missing_edge';
@@ -64,6 +66,20 @@ export function replayEvents(events: readonly Event[], graph: GraphProjection = 
 }
 
 export function projectEvent(graph: GraphProjection, event: Event): GraphProjection {
+  const payloadValidation = validateEventActionPayload(event);
+  if (!payloadValidation.ok) {
+    const failure = payloadValidation as Extract<typeof payloadValidation, { ok: false }>;
+    addDiagnostic(graph, {
+      code: 'invalid_event_payload',
+      severity: 'error',
+      event,
+      message: `Invalid payload for event action ${event.action}: ${failure.errors.join('; ')}`,
+      resourceId: event.resourceId,
+    });
+    graph.appliedEventIds.push(event.id);
+    return graph;
+  }
+
   switch (event.action) {
     case 'entity.create': {
       const entity = entityFromCreateEvent(event);
