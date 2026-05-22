@@ -1,0 +1,115 @@
+[
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000199",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": null,
+    "id": "019e42ae-9c00-7000-8000-000000000201",
+    "sequence": 1,
+    "action": "entity.create",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000004",
+    "timestamp": "2026-05-20T00:00:00.000Z",
+    "payload": {
+      "entity": {
+        "id": "019e42ae-9c00-7000-8000-000000000004",
+        "kind": "group",
+        "name": "Sphere Core Builders",
+        "metadata": {},
+        "createdAt": "2026-05-20T00:00:00.000Z",
+        "updatedAt": "2026-05-20T00:00:00.000Z",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "previousHash": null,
+    "hash": "2a7b9a8f9d8a9c656e7ef30a42ce870e5f8f6c8e70c03f8890963adfe1934a13"
+  },
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000199",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": null,
+    "id": "019e42ae-9c00-7000-8000-000000000202",
+    "sequence": 2,
+    "action": "entity.update",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000004",
+    "timestamp": "2026-05-20T01:00:00.000Z",
+    "payload": {
+      "entity": {
+        "name": "Sphere Core Protocol Builders",
+        "metadata": {
+          "purpose": "protocol extraction"
+        }
+      }
+    },
+    "previousHash": "2a7b9a8f9d8a9c656e7ef30a42ce870e5f8f6c8e70c03f8890963adfe1934a13",
+    "hash": "2bc1180bdcedea0d12ddf40e367a91abf3af548344cb574c066a8ac2a36fdd6b"
+  },
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000199",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": null,
+    "id": "019e42ae-9c00-7000-8000-000000000203",
+    "sequence": 3,
+    "action": "edge.create",
+    "resourceType": "edge",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000205",
+    "timestamp": "2026-05-20T02:00:00.000Z",
+    "payload": {
+      "edge": {
+        "id": "019e42ae-9c00-7000-8000-000000000205",
+        "sourceId": "019e42ae-9c00-7000-8000-000000000003",
+        "targetId": "019e42ae-9c00-7000-8000-000000000004",
+        "type": "member_of",
+        "metadata": {},
+        "createdAt": "2026-05-20T02:00:00.000Z",
+        "createdBy": "019e42ae-9c00-7000-8000-000000000002",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "previousHash": "2bc1180bdcedea0d12ddf40e367a91abf3af548344cb574c066a8ac2a36fdd6b",
+    "hash": "09be0735aad9c523d0f4f13a98fc78e390f229fbcd0257b95b5479481a846d6c"
+  },
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000199",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": "membership revoked",
+    "id": "019e42ae-9c00-7000-8000-000000000204",
+    "sequence": 4,
+    "action": "edge.delete",
+    "resourceType": "edge",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000205",
+    "timestamp": "2026-05-20T03:00:00.000Z",
+    "payload": {},
+    "previousHash": "09be0735aad9c523d0f4f13a98fc78e390f229fbcd0257b95b5479481a846d6c",
+    "hash": "e6c9c179b92d75c7c649fce63f757b941093d4dd55e0c569793c5e649c54e880"
+  },
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000199",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": "group retired",
+    "id": "019e42ae-9c00-7000-8000-000000000205",
+    "sequence": 5,
+    "action": "entity.delete",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000004",
+    "timestamp": "2026-05-20T04:00:00.000Z",
+    "payload": {},
+    "previousHash": "e6c9c179b92d75c7c649fce63f757b941093d4dd55e0c569793c5e649c54e880",
+    "hash": "cfdda17add95a73135b22035be44c8b4c808b30f04402e236218cd93ba397049"
+  }
+]

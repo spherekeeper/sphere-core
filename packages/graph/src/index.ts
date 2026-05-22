@@ -1,8 +1,17 @@
 import { verifyEventChain } from '@sphere/events';
 import type { Edge, Entity, Event, JsonObject } from '@sphere/types';
 
+export interface EntityTombstone {
+  id: string;
+  deletedAt: string;
+  deletedBy: string;
+  eventId: string;
+  reason: string | null;
+}
+
 export interface GraphProjection {
   entities: Map<string, Entity>;
+  entityTombstones: Map<string, EntityTombstone>;
   edges: Map<string, Edge>;
   appliedEventIds: string[];
 }
@@ -10,6 +19,7 @@ export interface GraphProjection {
 export function createGraphProjection(): GraphProjection {
   return {
     entities: new Map(),
+    entityTombstones: new Map(),
     edges: new Map(),
     appliedEventIds: [],
   };
@@ -33,11 +43,24 @@ export function projectEvent(graph: GraphProjection, event: Event): GraphProject
     case 'entity.create': {
       const entity = entityFromCreateEvent(event);
       graph.entities.set(entity.id, entity);
+      graph.entityTombstones.delete(entity.id);
+      break;
+    }
+    case 'entity.update': {
+      updateEntity(graph, event);
+      break;
+    }
+    case 'entity.delete': {
+      deleteEntity(graph, event);
       break;
     }
     case 'edge.create': {
       const edge = edgeFromCreateEvent(event);
       graph.edges.set(edge.id, edge);
+      break;
+    }
+    case 'edge.delete': {
+      deleteEdge(graph, event);
       break;
     }
     default:
@@ -49,7 +72,14 @@ export function projectEvent(graph: GraphProjection, event: Event): GraphProject
 }
 
 export function getEntity(graph: GraphProjection, id: string): Entity | undefined {
+  if (graph.entityTombstones.has(id)) {
+    return undefined;
+  }
   return graph.entities.get(id);
+}
+
+export function getEntityTombstone(graph: GraphProjection, id: string): EntityTombstone | undefined {
+  return graph.entityTombstones.get(id);
 }
 
 export function getEdge(graph: GraphProjection, id: string): Edge | undefined {
@@ -57,11 +87,11 @@ export function getEdge(graph: GraphProjection, id: string): Edge | undefined {
 }
 
 export function getEdgesFrom(graph: GraphProjection, sourceId: string): Edge[] {
-  return [...graph.edges.values()].filter((edge) => edge.sourceId === sourceId);
+  return [...graph.edges.values()].filter((edge) => edge.sourceId === sourceId && edge.deletedAt == null);
 }
 
 export function getEdgesTo(graph: GraphProjection, targetId: string): Edge[] {
-  return [...graph.edges.values()].filter((edge) => edge.targetId === targetId);
+  return [...graph.edges.values()].filter((edge) => edge.targetId === targetId && edge.deletedAt == null);
 }
 
 function entityFromCreateEvent(event: Event): Entity {
@@ -93,6 +123,51 @@ function edgeFromCreateEvent(event: Event): Edge {
     deletedAt: nullableStringFrom(payloadEdge.deletedAt),
     deletedBy: nullableStringFrom(payloadEdge.deletedBy),
   };
+}
+
+function updateEntity(graph: GraphProjection, event: Event): void {
+  const entityId = stringFrom(event.resourceId, event.subjectId);
+  const current = graph.entities.get(entityId);
+  if (current === undefined || graph.entityTombstones.has(entityId)) {
+    return;
+  }
+
+  const patch = asObject(event.payload.entity);
+  graph.entities.set(entityId, {
+    ...current,
+    kind: typeof patch.kind === 'string' ? (patch.kind as Entity['kind']) : current.kind,
+    name: stringFrom(patch.name, current.name),
+    metadata: {
+      ...current.metadata,
+      ...asObject(patch.metadata),
+    },
+    updatedAt: stringFrom(patch.updatedAt, event.timestamp),
+  });
+}
+
+function deleteEntity(graph: GraphProjection, event: Event): void {
+  const entityId = stringFrom(event.resourceId, event.subjectId);
+  graph.entityTombstones.set(entityId, {
+    id: entityId,
+    deletedAt: event.timestamp,
+    deletedBy: event.actorId,
+    eventId: event.id,
+    reason: event.reason,
+  });
+}
+
+function deleteEdge(graph: GraphProjection, event: Event): void {
+  const edgeId = stringFrom(event.resourceId);
+  const current = graph.edges.get(edgeId);
+  if (current === undefined) {
+    return;
+  }
+
+  graph.edges.set(edgeId, {
+    ...current,
+    deletedAt: event.timestamp,
+    deletedBy: event.actorId,
+  });
 }
 
 function asObject(value: unknown): JsonObject {

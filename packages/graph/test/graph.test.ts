@@ -3,7 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import type { Event } from '@sphere/types';
+import { linkEvent, withEventHash } from '@sphere/events';
+import type { Event, EventWithoutHash } from '@sphere/types';
 import {
   createGraphProjection,
   replayEvents,
@@ -12,6 +13,7 @@ import {
   getEdge,
   getEdgesFrom,
   getEdgesTo,
+  getEntityTombstone,
 } from '../src/index.js';
 
 const repoRoot = join(__dirname, '../../..');
@@ -22,6 +24,50 @@ const chainFixture = JSON.parse(
 const brokenPreviousHashFixture = JSON.parse(
   readFileSync(join(repoRoot, 'specs/test-vectors/hash-chain/invalid-broken-previous-hash.json'), 'utf8'),
 ) as Event[];
+
+const updateDeleteFixture = JSON.parse(
+  readFileSync(join(repoRoot, 'specs/test-vectors/graph-projection/entity-edge-update-delete-chain.json'), 'utf8'),
+) as Event[];
+
+const baseEvent = chainFixture[0]!;
+const entityId = '019e42ae-9c00-7000-8000-000000000004';
+const actorId = '019e42ae-9c00-7000-8000-000000000002';
+
+function eventWithoutHash(overrides: Partial<EventWithoutHash>): EventWithoutHash {
+  return {
+    id: stringFrom(overrides.id, `019e42ae-9c00-7000-8000-${String(overrides.sequence ?? 1).padStart(12, '0')}`),
+    chainId: baseEvent.chainId,
+    sequence: overrides.sequence ?? 1,
+    actorId,
+    subjectId: entityId,
+    action: overrides.action ?? 'custom:test',
+    resourceType: overrides.resourceType ?? 'entity',
+    resourceId: overrides.resourceId ?? entityId,
+    timestamp: overrides.timestamp ?? '2026-05-20T00:00:00.000Z',
+    payload: overrides.payload ?? {},
+    reason: overrides.reason ?? null,
+    schemaVersion: '0.1.0',
+    hashAlgorithm: 'sha256',
+    previousHash: overrides.previousHash ?? null,
+  };
+}
+
+function validChain(...events: EventWithoutHash[]): Event[] {
+  const [first, ...rest] = events;
+  if (first === undefined) {
+    throw new Error('validChain requires at least one event');
+  }
+
+  const chain = [withEventHash(first as unknown as Record<string, unknown>) as unknown as Event];
+  for (const event of rest) {
+    chain.push(linkEvent(chain[chain.length - 1]!, event as unknown as Record<string, unknown>) as unknown as Event);
+  }
+  return chain;
+}
+
+function stringFrom(value: unknown, fallback: string): string {
+  return typeof value === 'string' ? value : fallback;
+}
 
 describe('@sphere/graph', () => {
   it('creates an empty in-memory graph projection', () => {
@@ -71,5 +117,96 @@ describe('@sphere/graph', () => {
 
   it('rejects unverified chains before replaying projection state', () => {
     expect(() => replayEvents(brokenPreviousHashFixture)).toThrow(/previous_hash_mismatch/);
+  });
+
+  it('applies entity.update events as shallow entity patches with metadata merge', () => {
+    const [createEvent] = chainFixture;
+    const chain = validChain(
+      { ...createEvent!, hash: undefined } as unknown as EventWithoutHash,
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000006',
+        sequence: 2,
+        action: 'entity.update',
+        timestamp: '2026-05-20T01:00:00.000Z',
+        payload: {
+          entity: {
+            name: 'Sphere Core Builders',
+            metadata: { purpose: 'protocol extraction' },
+          },
+        },
+      }),
+    );
+
+    const graph = replayEvents(chain);
+
+    expect(getEntity(graph, entityId)).toMatchObject({
+      id: entityId,
+      kind: 'group',
+      name: 'Sphere Core Builders',
+      metadata: { purpose: 'protocol extraction' },
+      createdAt: '2026-05-20T00:00:00.000Z',
+      updatedAt: '2026-05-20T01:00:00.000Z',
+    });
+  });
+
+  it('records entity tombstones and hides deleted entities from active lookup', () => {
+    const [createEvent] = chainFixture;
+    const chain = validChain(
+      { ...createEvent!, hash: undefined } as unknown as EventWithoutHash,
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000007',
+        sequence: 2,
+        action: 'entity.delete',
+        timestamp: '2026-05-20T02:00:00.000Z',
+        reason: 'test deletion',
+      }),
+    );
+
+    const graph = replayEvents(chain);
+
+    expect(getEntity(graph, entityId)).toBeUndefined();
+    expect(getEntityTombstone(graph, entityId)).toEqual({
+      id: entityId,
+      deletedAt: '2026-05-20T02:00:00.000Z',
+      deletedBy: actorId,
+      eventId: '019e42ae-9c00-7000-8000-000000000007',
+      reason: 'test deletion',
+    });
+  });
+
+  it('applies edge.delete events as edge tombstones and excludes deleted edges from directional lookup', () => {
+    const chain = validChain(
+      ...chainFixture.map((event) => ({ ...event, hash: undefined }) as unknown as EventWithoutHash),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000008',
+        sequence: 3,
+        action: 'edge.delete',
+        resourceType: 'edge',
+        resourceId: '019e42ae-9c00-7000-8000-000000000005',
+        timestamp: '2026-05-20T03:00:00.000Z',
+        reason: 'membership revoked',
+      }),
+    );
+
+    const graph = replayEvents(chain);
+    const deletedEdge = getEdge(graph, '019e42ae-9c00-7000-8000-000000000005');
+
+    expect(deletedEdge).toMatchObject({
+      deletedAt: '2026-05-20T03:00:00.000Z',
+      deletedBy: actorId,
+    });
+    expect(getEdgesFrom(graph, '019e42ae-9c00-7000-8000-000000000003')).toEqual([]);
+    expect(getEdgesTo(graph, entityId)).toEqual([]);
+  });
+
+  it('replays the update/delete graph projection test vector', () => {
+    const graph = replayEvents(updateDeleteFixture);
+
+    expect(getEntity(graph, entityId)).toBeUndefined();
+    expect(getEntityTombstone(graph, entityId)?.reason).toBe('group retired');
+    expect(getEdge(graph, '019e42ae-9c00-7000-8000-000000000205')).toMatchObject({
+      deletedAt: '2026-05-20T03:00:00.000Z',
+      deletedBy: actorId,
+    });
   });
 });
