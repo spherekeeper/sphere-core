@@ -14,6 +14,7 @@ import {
   getEdgesFrom,
   getEdgesTo,
   getEntityTombstone,
+  getProjectionDiagnostics,
 } from '../src/index.js';
 
 const repoRoot = join(__dirname, '../../..');
@@ -207,6 +208,66 @@ describe('@sphere/graph', () => {
     expect(getEdge(graph, '019e42ae-9c00-7000-8000-000000000205')).toMatchObject({
       deletedAt: '2026-05-20T03:00:00.000Z',
       deletedBy: actorId,
+    });
+  });
+
+  it('records diagnostics for unsupported custom events instead of silently skipping them', () => {
+    const [createEvent] = chainFixture;
+    const chain = validChain(
+      { ...createEvent!, hash: undefined } as unknown as EventWithoutHash,
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000009',
+        sequence: 2,
+        action: 'custom:noop',
+        resourceType: 'custom:noop',
+        resourceId: null,
+      }),
+    );
+
+    const graph = replayEvents(chain);
+
+    expect(getProjectionDiagnostics(graph)).toEqual([
+      {
+        code: 'unsupported_action',
+        severity: 'info',
+        eventId: '019e42ae-9c00-7000-8000-000000000009',
+        action: 'custom:noop',
+        message: 'No projection handler for event action custom:noop',
+      },
+    ]);
+  });
+
+  it('records diagnostics for missing update/delete targets', () => {
+    const missingEntityId = '019e42ae-9c00-7000-8000-000000999999';
+    const missingEdgeId = '019e42ae-9c00-7000-8000-000000888888';
+    const chain = validChain(
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000010',
+        sequence: 1,
+        action: 'entity.update',
+        resourceType: 'entity',
+        resourceId: missingEntityId,
+        payload: { entity: { name: 'Missing' } },
+      }),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000011',
+        sequence: 2,
+        action: 'edge.delete',
+        resourceType: 'edge',
+        resourceId: missingEdgeId,
+      }),
+    );
+
+    const graph = replayEvents(chain);
+
+    expect(getProjectionDiagnostics(graph).map((diagnostic) => diagnostic.code)).toEqual([
+      'entity_update_missing_entity',
+      'edge_delete_missing_edge',
+    ]);
+    expect(getProjectionDiagnostics(graph)[0]).toMatchObject({
+      severity: 'warning',
+      eventId: '019e42ae-9c00-7000-8000-000000000010',
+      resourceId: missingEntityId,
     });
   });
 });

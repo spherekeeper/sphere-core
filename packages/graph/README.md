@@ -16,9 +16,16 @@ The current projection supports:
 - `getEdge(id)`
 - `getEdgesFrom(sourceId)`
 - `getEdgesTo(targetId)`
+- `getProjectionDiagnostics()`
 
 Deletion semantics:
 
 - `entity.delete` records an entity tombstone and hides the entity from active lookup.
 - `edge.delete` marks an edge with `deletedAt` and `deletedBy`.
 - Directional edge queries exclude deleted edges.
+
+Diagnostics semantics:
+
+- Unsupported event actions are recorded as `info` diagnostics.
+- Missing update/delete targets are recorded as `warning` diagnostics.
+- Diagnostics include event id, action, code, message, and resource id when applicable.

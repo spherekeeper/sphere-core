@@ -9,10 +9,28 @@ export interface EntityTombstone {
   reason: string | null;
 }
 
+export type GraphProjectionDiagnosticSeverity = 'info' | 'warning' | 'error';
+
+export type GraphProjectionDiagnosticCode =
+  | 'unsupported_action'
+  | 'entity_update_missing_entity'
+  | 'entity_update_tombstoned_entity'
+  | 'edge_delete_missing_edge';
+
+export interface GraphProjectionDiagnostic {
+  code: GraphProjectionDiagnosticCode;
+  severity: GraphProjectionDiagnosticSeverity;
+  eventId: string;
+  action: Event['action'];
+  message: string;
+  resourceId?: string | null;
+}
+
 export interface GraphProjection {
   entities: Map<string, Entity>;
   entityTombstones: Map<string, EntityTombstone>;
   edges: Map<string, Edge>;
+  diagnostics: GraphProjectionDiagnostic[];
   appliedEventIds: string[];
 }
 
@@ -21,6 +39,7 @@ export function createGraphProjection(): GraphProjection {
     entities: new Map(),
     entityTombstones: new Map(),
     edges: new Map(),
+    diagnostics: [],
     appliedEventIds: [],
   };
 }
@@ -64,6 +83,12 @@ export function projectEvent(graph: GraphProjection, event: Event): GraphProject
       break;
     }
     default:
+      addDiagnostic(graph, {
+        code: 'unsupported_action',
+        severity: 'info',
+        event,
+        message: `No projection handler for event action ${event.action}`,
+      });
       break;
   }
 
@@ -92,6 +117,10 @@ export function getEdgesFrom(graph: GraphProjection, sourceId: string): Edge[] {
 
 export function getEdgesTo(graph: GraphProjection, targetId: string): Edge[] {
   return [...graph.edges.values()].filter((edge) => edge.targetId === targetId && edge.deletedAt == null);
+}
+
+export function getProjectionDiagnostics(graph: GraphProjection): readonly GraphProjectionDiagnostic[] {
+  return graph.diagnostics;
 }
 
 function entityFromCreateEvent(event: Event): Entity {
@@ -128,7 +157,24 @@ function edgeFromCreateEvent(event: Event): Edge {
 function updateEntity(graph: GraphProjection, event: Event): void {
   const entityId = stringFrom(event.resourceId, event.subjectId);
   const current = graph.entities.get(entityId);
-  if (current === undefined || graph.entityTombstones.has(entityId)) {
+  if (current === undefined) {
+    addDiagnostic(graph, {
+      code: 'entity_update_missing_entity',
+      severity: 'warning',
+      event,
+      message: `Cannot update missing entity ${entityId}`,
+      resourceId: entityId,
+    });
+    return;
+  }
+  if (graph.entityTombstones.has(entityId)) {
+    addDiagnostic(graph, {
+      code: 'entity_update_tombstoned_entity',
+      severity: 'warning',
+      event,
+      message: `Cannot update tombstoned entity ${entityId}`,
+      resourceId: entityId,
+    });
     return;
   }
 
@@ -160,6 +206,13 @@ function deleteEdge(graph: GraphProjection, event: Event): void {
   const edgeId = stringFrom(event.resourceId);
   const current = graph.edges.get(edgeId);
   if (current === undefined) {
+    addDiagnostic(graph, {
+      code: 'edge_delete_missing_edge',
+      severity: 'warning',
+      event,
+      message: `Cannot delete missing edge ${edgeId}`,
+      resourceId: edgeId,
+    });
     return;
   }
 
@@ -167,6 +220,25 @@ function deleteEdge(graph: GraphProjection, event: Event): void {
     ...current,
     deletedAt: event.timestamp,
     deletedBy: event.actorId,
+  });
+}
+
+interface DiagnosticInput {
+  code: GraphProjectionDiagnosticCode;
+  severity: GraphProjectionDiagnosticSeverity;
+  event: Event;
+  message: string;
+  resourceId?: string | null;
+}
+
+function addDiagnostic(graph: GraphProjection, input: DiagnosticInput): void {
+  graph.diagnostics.push({
+    code: input.code,
+    severity: input.severity,
+    eventId: input.event.id,
+    action: input.event.action,
+    message: input.message,
+    ...(input.resourceId !== undefined ? { resourceId: input.resourceId } : {}),
   });
 }
 
