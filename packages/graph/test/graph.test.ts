@@ -293,6 +293,29 @@ describe('@sphere/graph', () => {
     });
   });
 
+  it('records diagnostics for unlinking a missing identity', () => {
+    const missingIdentityId = '019e42ae-9c00-7000-8000-000000777777';
+    const graph = projectEvent(
+      createGraphProjection(),
+      withEventHash(
+        eventWithoutHash({
+          action: 'identity.unlink',
+          resourceType: 'identity_link',
+          resourceId: missingIdentityId,
+        }) as unknown as Record<string, unknown>,
+      ) as unknown as Event,
+    );
+
+    expect(getProjectionDiagnostics(graph)).toEqual([
+      expect.objectContaining({
+        code: 'identity_unlink_missing_identity',
+        severity: 'warning',
+        action: 'identity.unlink',
+        resourceId: missingIdentityId,
+      }),
+    ]);
+  });
+
   it('projects identity.link events and indexes identities by entity and platform id', () => {
     const link = identityLink();
     const chain = validChain(

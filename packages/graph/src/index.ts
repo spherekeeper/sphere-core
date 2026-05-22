@@ -17,7 +17,8 @@ export type GraphProjectionDiagnosticCode =
   | 'invalid_event_payload'
   | 'entity_update_missing_entity'
   | 'entity_update_tombstoned_entity'
-  | 'edge_delete_missing_edge';
+  | 'edge_delete_missing_edge'
+  | 'identity_unlink_missing_identity';
 
 export interface GraphProjectionDiagnostic {
   code: GraphProjectionDiagnosticCode;
@@ -295,6 +296,13 @@ function unlinkIdentity(graph: GraphProjection, event: Event): void {
   const linkId = stringFrom(event.resourceId);
   const link = graph.identityLinks.get(linkId);
   if (link === undefined) {
+    addDiagnostic(graph, {
+      code: 'identity_unlink_missing_identity',
+      severity: 'warning',
+      event,
+      message: `Cannot unlink missing identity ${linkId}`,
+      resourceId: linkId,
+    });
     return;
   }
 

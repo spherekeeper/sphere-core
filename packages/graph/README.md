@@ -34,4 +34,5 @@ Diagnostics semantics:
 - Unsupported event actions are recorded as `info` diagnostics.
 - Malformed action-specific payloads are recorded as `error` diagnostics and skipped before projection state is mutated.
 - Missing update/delete targets are recorded as `warning` diagnostics.
+- Missing identity unlink targets are recorded as `warning` diagnostics.
 - Diagnostics include event id, action, code, message, and resource id when applicable.
