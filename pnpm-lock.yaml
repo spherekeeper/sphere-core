@@ -24,6 +24,15 @@ importers:
         specifier: workspace:*
         version: link:../types
 
+  packages/graph:
+    dependencies:
+      '@sphere/events':
+        specifier: workspace:*
+        version: link:../events
+      '@sphere/types':
+        specifier: workspace:*
+        version: link:../types
+
   packages/ids: {}
 
   packages/schemas:
