@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type { Event, JsonValue } from '@sphere/types';
 
 export type CanonicalSerializable = JsonValue;
@@ -32,6 +34,26 @@ export function eventToCanonicalJson(event: Event | Record<string, unknown>, opt
 
 export function eventToCanonicalXml(event: Event | Record<string, unknown>, options: CanonicalXmlOptions = {}): string {
   return canonicalXml(event, { rootName: 'event', ...options });
+}
+
+export function eventHashPayloadJson(event: Event | Record<string, unknown>): string {
+  const { hash: _hash, ...eventWithoutHash } = event;
+  return canonicalJson(eventWithoutHash);
+}
+
+export function computeEventHash(event: Event | Record<string, unknown>): string {
+  return createHash('sha256').update(eventHashPayloadJson(event), 'utf8').digest('hex');
+}
+
+export function withEventHash<T extends Event | Record<string, unknown>>(event: T): T & { hash: string } {
+  return {
+    ...event,
+    hash: computeEventHash(event),
+  };
+}
+
+export function verifyEventHash(event: Event | Record<string, unknown>): boolean {
+  return typeof event.hash === 'string' && event.hash === computeEventHash(event);
 }
 
 function toCanonicalValue(value: unknown, omitKeys: ReadonlySet<string>): JsonValue {

@@ -4,8 +4,12 @@ import { describe, expect, it } from 'vitest';
 import {
   canonicalJson,
   canonicalXml,
+  computeEventHash,
+  eventHashPayloadJson,
   eventToCanonicalJson,
   eventToCanonicalXml,
+  verifyEventHash,
+  withEventHash,
 } from '../src/index.js';
 
 const unordered = {
@@ -33,6 +37,7 @@ const event = {
       kind: 'group',
       name: 'Sphere <Core> & Friends',
     },
+    hash: 'payload-hash-must-remain-in-hash-input',
   },
   reason: null,
   schemaVersion: '0.1.0',
@@ -67,6 +72,26 @@ describe('@sphere/events canonical serialization', () => {
     expect(xml).toContain('<action>entity.create</action>');
     expect(xml).toContain('<name>Sphere &lt;Core&gt; &amp; Friends</name>');
     expect(event).toEqual(before);
+  });
+
+  it('hashes events deterministically with SHA-256 over canonical JSON excluding only the top-level hash', () => {
+    const hashInput = eventHashPayloadJson(event);
+    const hash = computeEventHash(event);
+    const hashed = withEventHash(event);
+
+    expect(hashInput).not.toContain('"hash":"placeholder-hash"');
+    expect(hashInput).toContain('"hash":"payload-hash-must-remain-in-hash-input"');
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(computeEventHash({ ...event, hash: 'changed-hash' })).toBe(hash);
+    expect(computeEventHash({ ...event, payload: { ...event.payload, hash: 'changed-payload-hash' } })).not.toBe(hash);
+    expect(hashed).toEqual({ ...event, hash });
+    expect(verifyEventHash(hashed)).toBe(true);
+    expect(verifyEventHash({ ...hashed, action: 'edge.create' })).toBe(false);
+  });
+
+  it('supports fixture-backed event hashes', () => {
+    const expectedHash = readFileSync('specs/test-vectors/valid/event-hash-basic.sha256', 'utf8').trimEnd();
+    expect(computeEventHash(event)).toBe(expectedHash);
   });
 
   it('rejects values that cannot be serialized canonically', () => {
