@@ -1,5 +1,5 @@
 import { verifyEventChain } from '@sphere/events';
-import type { Edge, Entity, Event, JsonObject } from '@sphere/types';
+import type { Edge, Entity, Event, IdentityLink, JsonObject } from '@sphere/types';
 
 export interface EntityTombstone {
   id: string;
@@ -30,6 +30,9 @@ export interface GraphProjection {
   entities: Map<string, Entity>;
   entityTombstones: Map<string, EntityTombstone>;
   edges: Map<string, Edge>;
+  identityLinks: Map<string, IdentityLink>;
+  identityLinksByEntity: Map<string, Set<string>>;
+  identityLinksByPlatform: Map<string, string>;
   diagnostics: GraphProjectionDiagnostic[];
   appliedEventIds: string[];
 }
@@ -39,6 +42,9 @@ export function createGraphProjection(): GraphProjection {
     entities: new Map(),
     entityTombstones: new Map(),
     edges: new Map(),
+    identityLinks: new Map(),
+    identityLinksByEntity: new Map(),
+    identityLinksByPlatform: new Map(),
     diagnostics: [],
     appliedEventIds: [],
   };
@@ -82,6 +88,14 @@ export function projectEvent(graph: GraphProjection, event: Event): GraphProject
       deleteEdge(graph, event);
       break;
     }
+    case 'identity.link': {
+      linkIdentity(graph, event);
+      break;
+    }
+    case 'identity.unlink': {
+      unlinkIdentity(graph, event);
+      break;
+    }
     default:
       addDiagnostic(graph, {
         code: 'unsupported_action',
@@ -121,6 +135,27 @@ export function getEdgesTo(graph: GraphProjection, targetId: string): Edge[] {
 
 export function getProjectionDiagnostics(graph: GraphProjection): readonly GraphProjectionDiagnostic[] {
   return graph.diagnostics;
+}
+
+export function getIdentityLink(graph: GraphProjection, id: string): IdentityLink | undefined {
+  return graph.identityLinks.get(id);
+}
+
+export function getIdentityLinksForEntity(graph: GraphProjection, entityId: string): IdentityLink[] {
+  const ids = graph.identityLinksByEntity.get(entityId);
+  if (ids === undefined) {
+    return [];
+  }
+  return [...ids].map((id) => graph.identityLinks.get(id)).filter((link): link is IdentityLink => link !== undefined);
+}
+
+export function getIdentityLinkByPlatform(
+  graph: GraphProjection,
+  platform: string,
+  platformId: string,
+): IdentityLink | undefined {
+  const id = graph.identityLinksByPlatform.get(identityPlatformKey(platform, platformId));
+  return id === undefined ? undefined : graph.identityLinks.get(id);
 }
 
 function entityFromCreateEvent(event: Event): Entity {
@@ -221,6 +256,65 @@ function deleteEdge(graph: GraphProjection, event: Event): void {
     deletedAt: event.timestamp,
     deletedBy: event.actorId,
   });
+}
+
+function linkIdentity(graph: GraphProjection, event: Event): void {
+  const link = identityLinkFromEvent(event);
+  const previous = graph.identityLinks.get(link.id);
+  if (previous !== undefined) {
+    removeIdentityIndexes(graph, previous);
+  }
+
+  graph.identityLinks.set(link.id, link);
+  let entityIndex = graph.identityLinksByEntity.get(link.entityId);
+  if (entityIndex === undefined) {
+    entityIndex = new Set<string>();
+    graph.identityLinksByEntity.set(link.entityId, entityIndex);
+  }
+  entityIndex.add(link.id);
+  graph.identityLinksByPlatform.set(identityPlatformKey(link.platform, link.platformId), link.id);
+}
+
+function unlinkIdentity(graph: GraphProjection, event: Event): void {
+  const linkId = stringFrom(event.resourceId);
+  const link = graph.identityLinks.get(linkId);
+  if (link === undefined) {
+    return;
+  }
+
+  graph.identityLinks.delete(linkId);
+  removeIdentityIndexes(graph, link);
+}
+
+function removeIdentityIndexes(graph: GraphProjection, link: IdentityLink): void {
+  const entityIndex = graph.identityLinksByEntity.get(link.entityId);
+  if (entityIndex !== undefined) {
+    entityIndex.delete(link.id);
+    if (entityIndex.size === 0) {
+      graph.identityLinksByEntity.delete(link.entityId);
+    }
+  }
+  graph.identityLinksByPlatform.delete(identityPlatformKey(link.platform, link.platformId));
+}
+
+function identityLinkFromEvent(event: Event): IdentityLink {
+  const payloadLink = asObject(event.payload.identityLink ?? event.payload.identity_link);
+  return {
+    id: stringFrom(payloadLink.id, event.resourceId),
+    entityId: stringFrom(payloadLink.entityId, event.subjectId),
+    platform: stringFrom(payloadLink.platform),
+    platformId: stringFrom(payloadLink.platformId),
+    handle: nullableStringFrom(payloadLink.handle),
+    verified: typeof payloadLink.verified === 'boolean' ? payloadLink.verified : false,
+    metadata: asObject(payloadLink.metadata),
+    createdAt: stringFrom(payloadLink.createdAt, event.timestamp),
+    updatedAt: stringFrom(payloadLink.updatedAt, event.timestamp),
+    schemaVersion: event.schemaVersion,
+  };
+}
+
+function identityPlatformKey(platform: string, platformId: string): string {
+  return `${platform}:${platformId}`;
 }
 
 interface DiagnosticInput {

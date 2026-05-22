@@ -1,0 +1,51 @@
+[
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000299",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": null,
+    "id": "019e42ae-9c00-7000-8000-000000000301",
+    "sequence": 1,
+    "action": "identity.link",
+    "resourceType": "identity_link",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000220",
+    "timestamp": "2026-05-20T05:00:00.000Z",
+    "payload": {
+      "identityLink": {
+        "id": "019e42ae-9c00-7000-8000-000000000220",
+        "entityId": "019e42ae-9c00-7000-8000-000000000004",
+        "platform": "discord",
+        "platformId": "1234567890",
+        "handle": "spherekeeper",
+        "verified": true,
+        "metadata": {
+          "source": "test-vector"
+        },
+        "createdAt": "2026-05-20T05:00:00.000Z",
+        "updatedAt": "2026-05-20T05:00:00.000Z",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "previousHash": null,
+    "hash": "66eb53066a54dbf700f64b293c3c651cbdfa0e4858fefccefe798642be247283"
+  },
+  {
+    "chainId": "019e42ae-9c00-7000-8000-000000000299",
+    "actorId": "019e42ae-9c00-7000-8000-000000000002",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000004",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "reason": "identity revoked",
+    "id": "019e42ae-9c00-7000-8000-000000000302",
+    "sequence": 2,
+    "action": "identity.unlink",
+    "resourceType": "identity_link",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000220",
+    "timestamp": "2026-05-20T06:00:00.000Z",
+    "payload": {},
+    "previousHash": "66eb53066a54dbf700f64b293c3c651cbdfa0e4858fefccefe798642be247283",
+    "hash": "05f8debbd9e80d115d9e56c047aa828253584710678a1803769db5d83e99b004"
+  }
+]

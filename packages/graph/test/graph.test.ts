@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { linkEvent, withEventHash } from '@sphere/events';
-import type { Event, EventWithoutHash } from '@sphere/types';
+import type { Event, EventWithoutHash, IdentityLink } from '@sphere/types';
 import {
   createGraphProjection,
   replayEvents,
@@ -15,6 +15,9 @@ import {
   getEdgesTo,
   getEntityTombstone,
   getProjectionDiagnostics,
+  getIdentityLink,
+  getIdentityLinksForEntity,
+  getIdentityLinkByPlatform,
 } from '../src/index.js';
 
 const repoRoot = join(__dirname, '../../..');
@@ -28,6 +31,10 @@ const brokenPreviousHashFixture = JSON.parse(
 
 const updateDeleteFixture = JSON.parse(
   readFileSync(join(repoRoot, 'specs/test-vectors/graph-projection/entity-edge-update-delete-chain.json'), 'utf8'),
+) as Event[];
+
+const identityFixture = JSON.parse(
+  readFileSync(join(repoRoot, 'specs/test-vectors/graph-projection/identity-link-unlink-chain.json'), 'utf8'),
 ) as Event[];
 
 const baseEvent = chainFixture[0]!;
@@ -68,6 +75,21 @@ function validChain(...events: EventWithoutHash[]): Event[] {
 
 function stringFrom(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback;
+}
+
+function identityLink(overrides: Partial<IdentityLink> = {}): IdentityLink {
+  return {
+    id: overrides.id ?? '019e42ae-9c00-7000-8000-000000000120',
+    entityId: overrides.entityId ?? entityId,
+    platform: overrides.platform ?? 'discord',
+    platformId: overrides.platformId ?? '1234567890',
+    handle: overrides.handle ?? 'spherekeeper',
+    verified: overrides.verified ?? true,
+    metadata: overrides.metadata ?? {},
+    createdAt: overrides.createdAt ?? '2026-05-20T05:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-05-20T05:00:00.000Z',
+    schemaVersion: '0.1.0',
+  };
 }
 
 describe('@sphere/graph', () => {
@@ -269,5 +291,60 @@ describe('@sphere/graph', () => {
       eventId: '019e42ae-9c00-7000-8000-000000000010',
       resourceId: missingEntityId,
     });
+  });
+
+  it('projects identity.link events and indexes identities by entity and platform id', () => {
+    const link = identityLink();
+    const chain = validChain(
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000012',
+        sequence: 1,
+        action: 'identity.link',
+        resourceType: 'identity_link',
+        resourceId: link.id,
+        payload: { identityLink: link },
+      }),
+    );
+
+    const graph = replayEvents(chain);
+
+    expect(getIdentityLink(graph, link.id)).toEqual(link);
+    expect(getIdentityLinksForEntity(graph, entityId)).toEqual([link]);
+    expect(getIdentityLinkByPlatform(graph, 'discord', '1234567890')).toEqual(link);
+  });
+
+  it('projects identity.unlink events by removing identity indexes', () => {
+    const link = identityLink();
+    const chain = validChain(
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000013',
+        sequence: 1,
+        action: 'identity.link',
+        resourceType: 'identity_link',
+        resourceId: link.id,
+        payload: { identityLink: link },
+      }),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000014',
+        sequence: 2,
+        action: 'identity.unlink',
+        resourceType: 'identity_link',
+        resourceId: link.id,
+      }),
+    );
+
+    const graph = replayEvents(chain);
+
+    expect(getIdentityLink(graph, link.id)).toBeUndefined();
+    expect(getIdentityLinksForEntity(graph, entityId)).toEqual([]);
+    expect(getIdentityLinkByPlatform(graph, 'discord', '1234567890')).toBeUndefined();
+  });
+
+  it('replays the identity link/unlink graph projection test vector', () => {
+    const graph = replayEvents(identityFixture);
+
+    expect(getIdentityLink(graph, '019e42ae-9c00-7000-8000-000000000220')).toBeUndefined();
+    expect(getIdentityLinksForEntity(graph, entityId)).toEqual([]);
+    expect(getIdentityLinkByPlatform(graph, 'discord', '1234567890')).toBeUndefined();
   });
 });

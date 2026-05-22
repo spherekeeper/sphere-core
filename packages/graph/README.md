@@ -11,12 +11,17 @@ The current projection supports:
 - `entity.delete`
 - `edge.create`
 - `edge.delete`
+- `identity.link`
+- `identity.unlink`
 - `getEntity(id)`
 - `getEntityTombstone(id)`
 - `getEdge(id)`
 - `getEdgesFrom(sourceId)`
 - `getEdgesTo(targetId)`
-- `getProjectionDiagnostics()`
+- `getIdentityLink(id)`
+- `getIdentityLinksForEntity(entityId)`
+- `getIdentityLinkByPlatform(platform, platformId)`
+- `getProjectionDiagnostics(graph)`
 
 Deletion semantics:
 
