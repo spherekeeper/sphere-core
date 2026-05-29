@@ -7,11 +7,36 @@ import { describe, expect, it } from 'vitest';
 import { linkEvent, withEventHash } from '@sphere/events';
 import type { Event, EventWithoutHash } from '@sphere/types';
 
-import { createInMemoryEventStore, createSqliteEventStore, EventStoreAppendError } from '../src/index.js';
+import {
+  createInMemoryEventStore,
+  createSqliteEventStore,
+  EventStoreAppendError,
+  type CloseableEventStore,
+  type EventStore,
+} from '../src/index.js';
 
 const actorId = '019e42ae-9c00-7000-8000-000000000002';
 const subjectId = '019e42ae-9c00-7000-8000-000000000003';
 const entityId = '019e42ae-9c00-7000-8000-000000000004';
+
+interface StoreCase {
+  name: string;
+  createStore(): { store: EventStore; cleanup(): void };
+}
+
+const storeCases: StoreCase[] = [
+  {
+    name: 'in-memory',
+    createStore: () => ({ store: createInMemoryEventStore(), cleanup: () => undefined }),
+  },
+  {
+    name: 'SQLite',
+    createStore: () => {
+      const store = createSqliteEventStore({ databasePath: ':memory:' });
+      return { store, cleanup: () => store.close() };
+    },
+  },
+];
 
 function eventWithoutHash(overrides: Partial<EventWithoutHash>): EventWithoutHash {
   return {
@@ -45,52 +70,125 @@ function validChain(...events: EventWithoutHash[]): Event[] {
   return chain;
 }
 
-describe('@sphere/event-store', () => {
-  it('appends and reads verified events by chain id', () => {
-    const store = createInMemoryEventStore();
-    const chain = validChain(
-      eventWithoutHash({ sequence: 1 }),
-      eventWithoutHash({
-        id: '019e42ae-9c00-7000-8000-000000000005',
-        sequence: 2,
-        action: 'entity.update',
-        payload: { entity: { name: 'Updated' } },
-      }),
-    );
+function threeEventChain(): Event[] {
+  return validChain(
+    eventWithoutHash({ sequence: 1 }),
+    eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2, action: 'entity.update' }),
+    eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000006', sequence: 3, action: 'entity.delete' }),
+  );
+}
 
-    store.append(chain);
+function withStore(testCase: StoreCase, run: (store: EventStore) => void): void {
+  const { store, cleanup } = testCase.createStore();
+  try {
+    run(store);
+  } finally {
+    cleanup();
+  }
+}
 
-    expect(store.getEvents(chain[0]!.chainId)).toEqual(chain);
-    expect(store.getLatestEvent(chain[0]!.chainId)).toEqual(chain[1]);
-  });
+describe('@sphere/event-store conformance', () => {
+  for (const testCase of storeCases) {
+    describe(testCase.name, () => {
+      it('appends and reads verified events by chain id', () => withStore(testCase, (store) => {
+        const chain = validChain(
+          eventWithoutHash({ sequence: 1 }),
+          eventWithoutHash({
+            id: '019e42ae-9c00-7000-8000-000000000005',
+            sequence: 2,
+            action: 'entity.update',
+            payload: { entity: { name: 'Updated' } },
+          }),
+        );
 
-  it('rejects appending an invalid hash chain without mutating stored events', () => {
-    const store = createInMemoryEventStore();
-    const chain = validChain(eventWithoutHash({ sequence: 1 }));
-    const invalid = [{ ...chain[0]!, hash: 'tampered' }];
+        store.append(chain);
 
-    expect(() => store.append(invalid)).toThrow(EventStoreAppendError);
-    expect(store.getEvents(chain[0]!.chainId)).toEqual([]);
-  });
+        expect(store.getEvents(chain[0]!.chainId)).toEqual(chain);
+        expect(store.getLatestEvent(chain[0]!.chainId)).toEqual(chain[1]);
+      }));
 
-  it('requires appended batches to continue the stored chain tip', () => {
-    const store = createInMemoryEventStore();
-    const [first, second] = validChain(
-      eventWithoutHash({ sequence: 1 }),
-      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2 }),
-    );
-    const competingSecond = withEventHash(
-      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000006', sequence: 2 }) as unknown as Record<string, unknown>,
-    ) as unknown as Event;
+      it('rejects appending an invalid hash chain without mutating stored events', () => withStore(testCase, (store) => {
+        const chain = validChain(eventWithoutHash({ sequence: 1 }));
+        const invalid = [{ ...chain[0]!, hash: 'tampered' }];
 
-    store.append([first!]);
+        expect(() => store.append(invalid)).toThrow(EventStoreAppendError);
+        expect(store.getEvents(chain[0]!.chainId)).toEqual([]);
+      }));
 
-    expect(() => store.append([competingSecond])).toThrow(/does not continue stored chain/);
-    expect(store.getEvents(first!.chainId)).toEqual([first]);
-    store.append([second!]);
-    expect(store.getLatestEvent(first!.chainId)).toEqual(second);
-  });
+      it('rejects duplicate event ids without mutating stored events', () => withStore(testCase, (store) => {
+        const [first, second] = validChain(
+          eventWithoutHash({ sequence: 1 }),
+          eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2 }),
+        );
+        const duplicateIdSecond = linkEvent(
+          first!,
+          eventWithoutHash({ id: first!.id, sequence: 2 }) as unknown as Record<string, unknown>,
+        ) as unknown as Event;
+        const otherChainDuplicate = validChain(eventWithoutHash({
+          id: first!.id,
+          chainId: '019e42ae-9c00-7000-8000-000000000199',
+          sequence: 1,
+        }));
 
+        expect(() => store.append([first!, duplicateIdSecond])).toThrow(/duplicate event id/);
+        expect(store.getEvents(first!.chainId)).toEqual([]);
+
+        store.append([first!, second!]);
+        expect(() => store.append(otherChainDuplicate)).toThrow(/duplicate event id/);
+        expect(store.getEvents(otherChainDuplicate[0]!.chainId)).toEqual([]);
+      }));
+
+      it('requires appended batches to continue the stored chain tip', () => withStore(testCase, (store) => {
+        const [first, second] = validChain(
+          eventWithoutHash({ sequence: 1 }),
+          eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2 }),
+        );
+        const competingSecond = withEventHash(
+          eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000006', sequence: 2 }) as unknown as Record<string, unknown>,
+        ) as unknown as Event;
+
+        store.append([first!]);
+
+        expect(() => store.append([competingSecond])).toThrow(/does not continue stored chain/);
+        expect(store.getEvents(first!.chainId)).toEqual([first]);
+        store.append([second!]);
+        expect(store.getLatestEvent(first!.chainId)).toEqual(second);
+      }));
+
+      it('does not mix chains when reading events after a sequence', () => withStore(testCase, (store) => {
+        const chain = threeEventChain();
+        const otherChain = validChain(eventWithoutHash({
+          id: '019e42ae-9c00-7000-8000-000000000105',
+          chainId: '019e42ae-9c00-7000-8000-000000000199',
+          sequence: 1,
+        }));
+
+        store.append(chain);
+        store.append(otherChain);
+
+        expect(store.getEventsAfter(chain[0]!.chainId, 1)).toEqual([chain[1], chain[2]]);
+        expect(store.getEventsAfter(otherChain[0]!.chainId, 0)).toEqual(otherChain);
+      }));
+
+      it('reads bounded event ranges after an exclusive sequence', () => withStore(testCase, (store) => {
+        const chain = threeEventChain();
+
+        store.append(chain);
+
+        expect(store.getEventsRange(chain[0]!.chainId, { afterSequence: 1, limit: 1 })).toEqual([chain[1]]);
+        expect(store.getEventsRange(chain[0]!.chainId, { afterSequence: 2 })).toEqual([chain[2]]);
+        expect(store.getEventsRange(chain[0]!.chainId, { limit: 2 })).toEqual([chain[0], chain[1]]);
+      }));
+
+      it('rejects invalid range options', () => withStore(testCase, (store) => {
+        expect(() => store.getEventsRange('chain', { afterSequence: -1 })).toThrow(/afterSequence/);
+        expect(() => store.getEventsRange('chain', { limit: 0 })).toThrow(/limit/);
+      }));
+    });
+  }
+});
+
+describe('@sphere/event-store SQLite persistence', () => {
   it('persists verified chains across SQLite event store instances', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'sphere-event-store-'));
     const databasePath = join(tempDir, 'events.sqlite');
@@ -107,6 +205,7 @@ describe('@sphere/event-store', () => {
       const reader = createSqliteEventStore({ databasePath });
       expect(reader.getEvents(chain[0]!.chainId)).toEqual(chain);
       expect(reader.getLatestEvent(chain[0]!.chainId)).toEqual(chain[1]);
+      expect(reader.getEventsAfter(chain[0]!.chainId, 1)).toEqual([chain[1]]);
       reader.close();
     } finally {
       rmSync(tempDir, { recursive: true, force: true });

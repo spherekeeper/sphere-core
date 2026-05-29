@@ -119,10 +119,19 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
     });
   });
 
-  app.get<{ Params: ChainParams }>('/chains/:chainId/events', async (request) => ({
-    chainId: request.params.chainId,
-    events: eventStore.getEvents(request.params.chainId),
-  }));
+  app.get<{ Params: ChainParams; Querystring: EventRangeQuery }>('/chains/:chainId/events', async (request, reply) => {
+    try {
+      return {
+        chainId: request.params.chainId,
+        events: eventStore.getEventsRange(request.params.chainId, parseEventRangeQuery(request.query)),
+      };
+    } catch (error) {
+      if (error instanceof RangeError) {
+        return reply.code(400).send({ error: 'invalid_event_range', message: error.message });
+      }
+      throw error;
+    }
+  });
 
   app.get<{ Params: ChainParams }>('/chains/:chainId/graph/entities', async (request) => {
     const graph = projectChain(eventStore, request.params.chainId);
@@ -196,6 +205,11 @@ interface AcceptCommandBody {
   command?: unknown;
 }
 
+interface EventRangeQuery {
+  afterSequence?: string;
+  limit?: string;
+}
+
 function normalizeEventsBody(body: AppendEventsBody | undefined): Event[] | undefined {
   if (body === undefined || !Array.isArray(body.events)) {
     return undefined;
@@ -212,6 +226,20 @@ function normalizeCommandBody(body: AcceptCommandBody | undefined): Command | un
   } catch {
     return undefined;
   }
+}
+
+function parseEventRangeQuery(query: EventRangeQuery) {
+  return {
+    ...(query.afterSequence === undefined ? {} : { afterSequence: parseIntegerQuery('afterSequence', query.afterSequence) }),
+    ...(query.limit === undefined ? {} : { limit: parseIntegerQuery('limit', query.limit) }),
+  };
+}
+
+function parseIntegerQuery(name: string, value: string): number {
+  if (!/^\d+$/.test(value)) {
+    throw new RangeError(`${name} must be an integer`);
+  }
+  return Number.parseInt(value, 10);
 }
 
 function projectChain(eventStore: EventStore, chainId: string) {

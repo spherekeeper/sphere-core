@@ -1,4 +1,4 @@
-import { verifyEventChain } from '@sphere/events';
+import { verifyEventChain, verifyEventHash } from '@sphere/events';
 import { validateEventActionPayload } from '@sphere/schemas';
 import type { Edge, Entity, Event, IdentityLink, JsonObject } from '@sphere/types';
 
@@ -15,6 +15,7 @@ export type GraphProjectionDiagnosticSeverity = 'info' | 'warning' | 'error';
 export type GraphProjectionDiagnosticCode =
   | 'unsupported_action'
   | 'invalid_event_payload'
+  | 'duplicate_event_skipped'
   | 'entity_update_missing_entity'
   | 'entity_update_tombstoned_entity'
   | 'edge_delete_missing_edge'
@@ -38,6 +39,9 @@ export interface GraphProjection {
   identityLinksByPlatform: Map<string, string>;
   diagnostics: GraphProjectionDiagnostic[];
   appliedEventIds: string[];
+  skippedEventIds: string[];
+  lastAppliedEvent?: Event;
+  lastReplayedEvent?: Event;
 }
 
 export function createGraphProjection(): GraphProjection {
@@ -50,13 +54,14 @@ export function createGraphProjection(): GraphProjection {
     identityLinksByPlatform: new Map(),
     diagnostics: [],
     appliedEventIds: [],
+    skippedEventIds: [],
   };
 }
 
 export function replayEvents(events: readonly Event[], graph: GraphProjection = createGraphProjection()): GraphProjection {
-  const verification = verifyEventChain(events);
-  if (!verification.ok) {
-    throw new Error(`Cannot replay invalid event chain: ${verification.code} at index ${verification.index}`);
+  const newEvents = events.filter((event) => !graph.appliedEventIds.includes(event.id) && !graph.skippedEventIds.includes(event.id));
+  if (newEvents.length > 0) {
+    verifyReplayBatch(newEvents, graph.lastReplayedEvent);
   }
 
   for (const event of events) {
@@ -67,6 +72,20 @@ export function replayEvents(events: readonly Event[], graph: GraphProjection = 
 }
 
 export function projectEvent(graph: GraphProjection, event: Event): GraphProjection {
+  if (graph.appliedEventIds.includes(event.id) || graph.skippedEventIds.includes(event.id)) {
+    addDiagnostic(graph, {
+      code: 'duplicate_event_skipped',
+      severity: 'info',
+      event,
+      message: `Skipping duplicate event ${event.id}`,
+      resourceId: event.resourceId,
+    });
+    if (!graph.skippedEventIds.includes(event.id)) {
+      graph.skippedEventIds.push(event.id);
+    }
+    return graph;
+  }
+
   const payloadValidation = validateEventActionPayload(event);
   if (!payloadValidation.ok) {
     const failure = payloadValidation as Extract<typeof payloadValidation, { ok: false }>;
@@ -77,7 +96,8 @@ export function projectEvent(graph: GraphProjection, event: Event): GraphProject
       message: `Invalid payload for event action ${event.action}: ${failure.errors.join('; ')}`,
       resourceId: event.resourceId,
     });
-    graph.appliedEventIds.push(event.id);
+    graph.skippedEventIds.push(event.id);
+    graph.lastReplayedEvent = event;
     return graph;
   }
 
@@ -124,7 +144,37 @@ export function projectEvent(graph: GraphProjection, event: Event): GraphProject
   }
 
   graph.appliedEventIds.push(event.id);
+  graph.lastAppliedEvent = event;
+  graph.lastReplayedEvent = event;
   return graph;
+}
+
+function verifyReplayBatch(events: readonly Event[], previousEvent: Event | undefined): void {
+  if (previousEvent === undefined) {
+    const verification = verifyEventChain(events);
+    if (!verification.ok) {
+      throw new Error(`Cannot replay invalid event chain: ${verification.code} at index ${verification.index}`);
+    }
+    return;
+  }
+
+  let previous = previousEvent;
+  for (let index = 0; index < events.length; index += 1) {
+    const current = events[index]!;
+    if (!verifyEventHash(current)) {
+      throw new Error(`Cannot replay invalid event chain: event_hash_mismatch at index ${index}`);
+    }
+    if (current.chainId !== previous.chainId) {
+      throw new Error(`Cannot replay invalid event chain: chain_id_mismatch at index ${index}`);
+    }
+    if (current.sequence !== previous.sequence + 1) {
+      throw new Error(`Cannot replay invalid event chain: sequence_mismatch at index ${index}`);
+    }
+    if (current.previousHash !== previous.hash) {
+      throw new Error(`Cannot replay invalid event chain: previous_hash_mismatch at index ${index}`);
+    }
+    previous = current;
+  }
 }
 
 export function getEntity(graph: GraphProjection, id: string): Entity | undefined {

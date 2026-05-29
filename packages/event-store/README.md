@@ -34,6 +34,17 @@ All stores:
 
 - append verified event-chain batches;
 - enforce single-chain batches;
+- enforce globally unique event ids;
 - enforce continuity against the stored chain tip;
 - return immutable event arrays by chain id;
+- return ranged event slices with exclusive `afterSequence` and optional `limit`;
 - return the latest event by chain id.
+
+Range reads:
+
+```ts
+const nextEvents = store.getEventsAfter(chainId, 10);
+const page = store.getEventsRange(chainId, { afterSequence: 10, limit: 100 });
+```
+
+Memory and SQLite implementations share the same conformance tests.

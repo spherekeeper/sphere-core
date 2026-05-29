@@ -61,6 +61,8 @@ GET  /chains/:chainId/graph/identity/:platform/:platformId
 GET  /chains/:chainId/graph/diagnostics
 ```
 
+`GET /chains/:chainId/events` accepts optional `afterSequence` and `limit` query parameters for ranged reads. `afterSequence` is exclusive and `limit` must be positive.
+
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
 This reference node is intended for local/trusted development. By default, it does not implement authentication, authorization, or rate limiting. Setting `SPHERE_NODE_BEARER_TOKEN` requires a matching bearer `Authorization` header on `/chains/*` endpoints, but this is still only a development gate; do not expose it to untrusted networks without stronger controls. See [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md) for the current boundary decision and pre-exposure checklist.

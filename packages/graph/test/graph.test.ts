@@ -100,6 +100,7 @@ describe('@sphere/graph', () => {
     expect(graph.entities.size).toBe(0);
     expect(graph.edges.size).toBe(0);
     expect(graph.appliedEventIds).toEqual([]);
+    expect(graph.skippedEventIds).toEqual([]);
   });
 
   it('projects entity.create events into entity state', () => {
@@ -166,6 +167,44 @@ describe('@sphere/graph', () => {
     expect(getEdgesFrom(graph, '019e42ae-9c00-7000-8000-000000000003')).toEqual([edge]);
     expect(getEdgesTo(graph, '019e42ae-9c00-7000-8000-000000000004')).toEqual([edge]);
     expect(graph.appliedEventIds).toEqual(chainFixture.map((event) => event.id));
+  });
+
+  it('replays non-genesis suffixes into an existing projection', () => {
+    const graph = replayEvents([chainFixture[0]!]);
+
+    replayEvents(chainFixture.slice(1), graph);
+
+    expect(graph.appliedEventIds).toEqual(chainFixture.map((event) => event.id));
+    expect(graph.lastAppliedEvent).toEqual(chainFixture[chainFixture.length - 1]);
+    expect(getEdge(graph, '019e42ae-9c00-7000-8000-000000000005')).toBeDefined();
+  });
+
+  it('replays later incremental pages after the replay cursor advances past genesis', () => {
+    const chain = validChain(
+      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000601', sequence: 1, action: 'entity.create', payload: { entity: { id: entityId, kind: 'group', name: 'Page One', metadata: {} } } }),
+      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000602', sequence: 2, action: 'entity.update', payload: { entity: { name: 'Page Two' } } }),
+      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000603', sequence: 3, action: 'entity.update', payload: { entity: { name: 'Page Three' } } }),
+    );
+    const graph = replayEvents([chain[0]!, chain[1]!]);
+
+    replayEvents([chain[2]!], graph);
+
+    expect(graph.appliedEventIds).toEqual(chain.map((event) => event.id));
+    expect(graph.lastReplayedEvent).toEqual(chain[2]);
+    expect(getEntity(graph, entityId)?.name).toBe('Page Three');
+  });
+
+  it('skips duplicate event ids during replay and records diagnostics', () => {
+    const graph = replayEvents(chainFixture);
+
+    replayEvents(chainFixture, graph);
+    replayEvents(chainFixture, graph);
+
+    expect(graph.appliedEventIds).toEqual(chainFixture.map((event) => event.id));
+    expect(graph.skippedEventIds).toEqual(chainFixture.map((event) => event.id));
+    expect(getProjectionDiagnostics(graph).map((diagnostic) => diagnostic.code)).toEqual(
+      [...chainFixture, ...chainFixture].map(() => 'duplicate_event_skipped'),
+    );
   });
 
   it('rejects unverified chains before replaying projection state', () => {
@@ -402,6 +441,35 @@ describe('@sphere/graph', () => {
     expect(getIdentityLinkByPlatform(graph, 'discord', '1234567890')).toBeUndefined();
   });
 
+  it('advances the replay cursor when a malformed event is skipped', () => {
+    const chain = validChain(
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000501',
+        sequence: 1,
+        action: 'identity.link',
+        resourceType: 'identity_link',
+        resourceId: '019e42ae-9c00-7000-8000-000000000333',
+        payload: { identityLink: { platform: 'discord' } },
+      }),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000502',
+        sequence: 2,
+        action: 'entity.create',
+        resourceType: 'entity',
+        resourceId: entityId,
+        payload: { entity: { id: entityId, kind: 'group', name: 'After Skip', metadata: {} } },
+      }),
+    );
+    const graph = replayEvents([chain[0]!]);
+
+    replayEvents([chain[1]!], graph);
+
+    expect(graph.appliedEventIds).toEqual([chain[1]!.id]);
+    expect(graph.skippedEventIds).toEqual([chain[0]!.id]);
+    expect(graph.lastReplayedEvent).toEqual(chain[1]);
+    expect(getEntity(graph, entityId)?.name).toBe('After Skip');
+  });
+
   it('records diagnostics and skips projection for malformed action payloads', () => {
     const graph = projectEvent(
       createGraphProjection(),
@@ -424,5 +492,7 @@ describe('@sphere/graph', () => {
         resourceId: '019e42ae-9c00-7000-8000-000000000333',
       }),
     ]);
+    expect(graph.appliedEventIds).toEqual([]);
+    expect(graph.skippedEventIds).toEqual(['019e42ae-9c00-7000-8000-000000000001']);
   });
 });

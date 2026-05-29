@@ -163,6 +163,10 @@ describe('Sphere reference node API', () => {
     expect(events.statusCode).toBe(200);
     expect(events.json()).toEqual({ chainId, events: [first, second] });
 
+    const rangedEvents = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?afterSequence=1&limit=1` });
+    expect(rangedEvents.statusCode).toBe(200);
+    expect(rangedEvents.json()).toEqual({ chainId, events: [second] });
+
     const entity = await app.inject({ method: 'GET', url: `/chains/${chainId}/graph/entities/${entityId}` });
     expect(entity.statusCode).toBe(200);
     expect(entity.json()).toMatchObject({
@@ -195,6 +199,37 @@ describe('Sphere reference node API', () => {
     const events = await app.inject({ method: 'GET', url: `/chains/${chainId}/events` });
     expect(events.statusCode).toBe(200);
     expect(events.json()).toEqual({ chainId, events: [] });
+  });
+
+  it('reads event ranges through a SQLite-backed node API', async () => {
+    const store = createSqliteEventStore({ databasePath: ':memory:' });
+    const app = buildNodeApp({ eventStore: store });
+    const first = entityCreateEvent();
+    const second = entityUpdateEvent(first);
+
+    try {
+      await app.inject({
+        method: 'POST',
+        url: `/chains/${chainId}/events`,
+        payload: { events: [first, second] },
+      });
+
+      const response = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?afterSequence=1&limit=1` });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ chainId, events: [second] });
+    } finally {
+      store.close();
+    }
+  });
+
+  it('rejects invalid event range query parameters', async () => {
+    const app = buildNodeApp();
+
+    const response = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?afterSequence=-1&limit=0` });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: 'invalid_event_range' });
   });
 
   it('accepts commands and appends generated events at the chain tip', async () => {

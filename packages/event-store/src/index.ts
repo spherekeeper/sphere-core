@@ -7,7 +7,14 @@ import type { Event } from '@sphere/types';
 export interface EventStore {
   append(events: readonly Event[]): void;
   getEvents(chainId: string): Event[];
+  getEventsAfter(chainId: string, sequence: number): Event[];
+  getEventsRange(chainId: string, options?: EventStoreRangeOptions): Event[];
   getLatestEvent(chainId: string): Event | undefined;
+}
+
+export interface EventStoreRangeOptions {
+  afterSequence?: number;
+  limit?: number;
 }
 
 export interface CloseableEventStore extends EventStore {
@@ -49,12 +56,17 @@ export function getEventStoreMetadata(eventStore: EventStore): EventStoreMetadat
 
 class InMemoryEventStore implements EventStore {
   readonly #eventsByChainId = new Map<string, Event[]>();
+  readonly #eventIds = new Set<string>();
 
   append(events: readonly Event[]): void {
     appendEvents({
       incoming: events,
       stored: events.length === 0 ? [] : (this.#eventsByChainId.get(events[0]!.chainId) ?? []),
+      eventExists: (eventId) => this.#eventIds.has(eventId),
       persist: (candidate) => {
+        for (const event of events) {
+          this.#eventIds.add(event.id);
+        }
         if (events.length > 0) {
           this.#eventsByChainId.set(events[0]!.chainId, candidate);
         }
@@ -63,7 +75,20 @@ class InMemoryEventStore implements EventStore {
   }
 
   getEvents(chainId: string): Event[] {
-    return [...(this.#eventsByChainId.get(chainId) ?? [])];
+    return this.getEventsRange(chainId);
+  }
+
+  getEventsAfter(chainId: string, sequence: number): Event[] {
+    return this.getEventsRange(chainId, { afterSequence: sequence });
+  }
+
+  getEventsRange(chainId: string, options: EventStoreRangeOptions = {}): Event[] {
+    const { afterSequence, limit } = normalizeRangeOptions(options);
+    const events = this.#eventsByChainId.get(chainId) ?? [];
+    const filtered = afterSequence === undefined
+      ? events
+      : events.filter((event) => event.sequence > afterSequence);
+    return limit === undefined ? [...filtered] : filtered.slice(0, limit);
   }
 
   getLatestEvent(chainId: string): Event | undefined {
@@ -102,6 +127,7 @@ class SqliteEventStore implements CloseableEventStore {
     const candidate = appendEvents({
       incoming: events,
       stored,
+      eventExists: (eventId) => this.hasEventId(eventId),
       persist: (verifiedCandidate) => {
         const toInsert = verifiedCandidate.slice(stored.length);
         const insert = this.#database.prepare(`
@@ -128,9 +154,20 @@ class SqliteEventStore implements CloseableEventStore {
   }
 
   getEvents(chainId: string): Event[] {
+    return this.getEventsRange(chainId);
+  }
+
+  getEventsAfter(chainId: string, sequence: number): Event[] {
+    return this.getEventsRange(chainId, { afterSequence: sequence });
+  }
+
+  getEventsRange(chainId: string, options: EventStoreRangeOptions = {}): Event[] {
+    const { afterSequence, limit } = normalizeRangeOptions(options);
+    const whereClause = afterSequence === undefined ? '' : ' AND sequence > @afterSequence';
+    const limitClause = limit === undefined ? '' : ' LIMIT @limit';
     const rows = this.#database
-      .prepare('SELECT event_json AS eventJson FROM events WHERE chain_id = ? ORDER BY sequence ASC')
-      .all(chainId) as Array<{ eventJson: string }>;
+      .prepare(`SELECT event_json AS eventJson FROM events WHERE chain_id = @chainId${whereClause} ORDER BY sequence ASC${limitClause}`)
+      .all({ chainId, afterSequence, limit }) as Array<{ eventJson: string }>;
     return rows.map((row) => JSON.parse(row.eventJson) as Event);
   }
 
@@ -141,6 +178,13 @@ class SqliteEventStore implements CloseableEventStore {
     return row === undefined ? undefined : (JSON.parse(row.eventJson) as Event);
   }
 
+  hasEventId(eventId: string): boolean {
+    const row = this.#database
+      .prepare('SELECT 1 FROM events WHERE event_id = ? LIMIT 1')
+      .get(eventId) as { 1: number } | undefined;
+    return row !== undefined;
+  }
+
   close(): void {
     this.#database.close();
   }
@@ -149,11 +193,34 @@ class SqliteEventStore implements CloseableEventStore {
 interface AppendEventsOptions {
   incoming: readonly Event[];
   stored: readonly Event[];
+  eventExists(eventId: string): boolean;
   persist(candidate: Event[]): void;
 }
 
+interface NormalizedRangeOptions {
+  afterSequence?: number;
+  limit?: number;
+}
+
+function normalizeRangeOptions(options: EventStoreRangeOptions): NormalizedRangeOptions {
+  const normalized: NormalizedRangeOptions = {};
+  if (options.afterSequence !== undefined) {
+    if (!Number.isInteger(options.afterSequence) || options.afterSequence < 0) {
+      throw new RangeError('afterSequence must be a non-negative integer');
+    }
+    normalized.afterSequence = options.afterSequence;
+  }
+  if (options.limit !== undefined) {
+    if (!Number.isInteger(options.limit) || options.limit < 1) {
+      throw new RangeError('limit must be a positive integer');
+    }
+    normalized.limit = options.limit;
+  }
+  return normalized;
+}
+
 function appendEvents(options: AppendEventsOptions): Event[] {
-  const { incoming, stored, persist } = options;
+  const { incoming, stored, eventExists, persist } = options;
 
   if (incoming.length === 0) {
     return [...stored];
@@ -162,6 +229,17 @@ function appendEvents(options: AppendEventsOptions): Event[] {
   const chainId = incoming[0]!.chainId;
   if (incoming.some((event) => event.chainId !== chainId)) {
     throw new EventStoreAppendError('mixed_chain_id', 'Cannot append events from multiple chains in one batch');
+  }
+
+  const incomingIds = new Set<string>();
+  for (const event of incoming) {
+    if (incomingIds.has(event.id)) {
+      throw new EventStoreAppendError('duplicate_event_id', `Cannot append duplicate event id ${event.id} in one batch`);
+    }
+    incomingIds.add(event.id);
+    if (eventExists(event.id)) {
+      throw new EventStoreAppendError('duplicate_event_id', `Cannot append duplicate event id ${event.id}`);
+    }
   }
 
   if (stored.length > 0) {
