@@ -68,4 +68,20 @@ Content-Type: application/json
 { "command": { /* Command */ } }
 ```
 
-The node derives the next sequence/previous hash from the chain tip, converts the command to an event with `createCommandEvent`, appends it, and returns `{ accepted, chainId, event }`.
+The node derives the next sequence/previous hash from the chain tip, converts the command to an event with `createCommandEvent`, appends it, and returns `{ accepted, chainId, event }`. Because commands are intent-level records, clients do not provide sequence numbers or previous hashes on this endpoint.
+
+This package's `createCommandSubmissionClient` currently submits already-built events to `POST /chains/:chainId/events`. Until a dedicated `submitCommand` helper exists, submit direct commands with `fetch`/HTTP:
+
+```ts
+const response = await fetch(`${baseUrl}/chains/${encodeURIComponent(chainId)}/commands`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ command }),
+});
+
+if (!response.ok) {
+  throw new CommandSubmissionError(response.status, await response.json());
+}
+```
+
+The reference node is local/trusted-development software today; the command endpoint has no authentication or rate limiting yet.

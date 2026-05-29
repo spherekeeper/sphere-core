@@ -61,7 +61,47 @@ GET  /chains/:chainId/graph/diagnostics
 
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
-`POST /chains/:chainId/commands` accepts `{ "command": Command }`, converts the command to the next hash-linked event on the chain, appends it, and returns `{ accepted, chainId, event }`. Invalid command bodies return `400` with `invalid_command_body`.
+This reference node is intended for local/trusted development. It does not implement authentication, authorization, or rate limiting yet; do not expose it to untrusted networks without adding those controls.
+
+### Command endpoint
+
+`POST /chains/:chainId/commands` accepts `{ "command": Command }`. Commands are intent-level records and do not carry chain position. The node derives `sequence` and `previousHash` from the current chain tip, converts the command into a hash-linked event, appends it, and returns `{ accepted, chainId, event }`.
+
+Example request:
+
+```bash
+curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/commands \
+  -H 'content-type: application/json' \
+  -d '{
+    "command": {
+      "id": "019e42ae-9c00-7000-8000-000000000100",
+      "actorId": "019e42ae-9c00-7000-8000-000000000001",
+      "action": "entity.update",
+      "resourceType": "entity",
+      "resourceId": "019e42ae-9c00-7000-8000-000000000002",
+      "payload": { "entity": { "name": "Ada Commanded" } },
+      "reason": null,
+      "createdAt": "2026-05-28T00:00:00.000Z",
+      "schemaVersion": "0.1.0"
+    }
+  }'
+```
+
+Success response shape:
+
+```json
+{
+  "accepted": true,
+  "chainId": "019e42ae-9c00-7000-8000-000000000000",
+  "event": {
+    "sequence": 2,
+    "previousHash": "<previous event hash>",
+    "payload": { "command": { "id": "019e42ae-9c00-7000-8000-000000000100" } }
+  }
+}
+```
+
+Invalid command bodies return `400` with `invalid_command_body`. Event-store append failures, such as stale chain-tip races, return `400` with `event_store_append_failed` plus the store error code/message.
 
 ## Current behavior
 
