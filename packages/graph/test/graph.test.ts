@@ -15,6 +15,7 @@ import {
   getEdgesTo,
   getEntityTombstone,
   getProjectionDiagnostics,
+  listEntities,
   getIdentityLink,
   getIdentityLinksForEntity,
   getIdentityLinkByPlatform,
@@ -116,6 +117,35 @@ describe('@sphere/graph', () => {
     expect(graph.appliedEventIds).toEqual(['019e42ae-9c00-7000-8000-000000000001']);
   });
 
+  it('lists active entities sorted by id and excludes tombstones', () => {
+    const lowEntityId = '019e42ae-9c00-7000-8000-000000000003';
+    const highEntityId = '019e42ae-9c00-7000-8000-000000000099';
+    const chain = validChain(
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000301',
+        sequence: 1,
+        action: 'entity.create',
+        resourceId: highEntityId,
+        payload: { entity: { id: highEntityId, kind: 'group', name: 'High', metadata: {} } },
+      }),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000302',
+        sequence: 2,
+        action: 'entity.create',
+        resourceId: lowEntityId,
+        payload: { entity: { id: lowEntityId, kind: 'person', name: 'Low', metadata: {} } },
+      }),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000303',
+        sequence: 3,
+        action: 'entity.delete',
+        resourceId: highEntityId,
+      }),
+    );
+
+    expect(listEntities(replayEvents(chain)).map((entity) => entity.id)).toEqual([lowEntityId]);
+  });
+
   it('replays a verified chain into entities and derived edges', () => {
     const graph = replayEvents(chainFixture);
 
@@ -188,6 +218,7 @@ describe('@sphere/graph', () => {
     const graph = replayEvents(chain);
 
     expect(getEntity(graph, entityId)).toBeUndefined();
+    expect(listEntities(graph)).toEqual([]);
     expect(getEntityTombstone(graph, entityId)).toEqual({
       id: entityId,
       deletedAt: '2026-05-20T02:00:00.000Z',

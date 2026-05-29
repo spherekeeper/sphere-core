@@ -14,6 +14,7 @@ The current projection supports:
 - `identity.link`
 - `identity.unlink`
 - `getEntity(id)`
+- `listEntities()`
 - `getEntityTombstone(id)`
 - `getEdge(id)`
 - `getEdgesFrom(sourceId)`
@@ -25,7 +26,7 @@ The current projection supports:
 
 Deletion semantics:
 
-- `entity.delete` records an entity tombstone and hides the entity from active lookup.
+- `entity.delete` records an entity tombstone and hides the entity from active lookup/listing.
 - `edge.delete` marks an edge with `deletedAt` and `deletedBy`.
 - Directional edge queries exclude deleted edges.
 

@@ -14,6 +14,7 @@ import {
   getEntity,
   getIdentityLinkByPlatform,
   getProjectionDiagnostics,
+  listEntities,
   replayEvents,
 } from '@sphere/graph';
 import { parseCommand } from '@sphere/schemas';
@@ -110,6 +111,11 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
     chainId: request.params.chainId,
     events: eventStore.getEvents(request.params.chainId),
   }));
+
+  app.get<{ Params: ChainParams }>('/chains/:chainId/graph/entities', async (request) => {
+    const graph = projectChain(eventStore, request.params.chainId);
+    return { chainId: request.params.chainId, entities: listEntities(graph) };
+  });
 
   app.get<{ Params: EntityParams }>('/chains/:chainId/graph/entities/:entityId', async (request, reply) => {
     const graph = projectChain(eventStore, request.params.chainId);
