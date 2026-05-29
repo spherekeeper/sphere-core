@@ -1,5 +1,7 @@
 # Sphere Core
 
+[![CI](https://github.com/spherekeeper/sphere-core/actions/workflows/ci.yml/badge.svg)](https://github.com/spherekeeper/sphere-core/actions/workflows/ci.yml)
+
 Private implementation workspace for Sphere core protocol schemas, TypeScript reference packages, and the first reference node experiments.
 
 This repo is intentionally early and private. It exists to extract and stabilize the proven graph, identity, event, and adapter lessons from the existing Sphere Discord bot and graph service prototypes.
