@@ -14,9 +14,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@sphere/commands": "workspace:*",
     "@sphere/event-store": "workspace:*",
     "@sphere/events": "workspace:*",
     "@sphere/graph": "workspace:*",
+    "@sphere/schemas": "workspace:*",
     "@sphere/types": "workspace:*",
     "fastify": "^4.28.1"
   },

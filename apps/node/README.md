@@ -50,6 +50,7 @@ The runtime installs SIGINT/SIGTERM handlers and closes Fastify plus closeable e
 GET  /health
 GET  /node/info
 POST /chains/:chainId/events
+POST /chains/:chainId/commands
 GET  /chains/:chainId/events
 GET  /chains/:chainId/graph/entities/:entityId
 GET  /chains/:chainId/graph/edges/from/:entityId
@@ -60,10 +61,13 @@ GET  /chains/:chainId/graph/diagnostics
 
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
+`POST /chains/:chainId/commands` accepts `{ "command": Command }`, converts the command to the next hash-linked event on the chain, appends it, and returns `{ accepted, chainId, event }`. Invalid command bodies return `400` with `invalid_command_body`.
+
 ## Current behavior
 
 - Appends verified event-chain batches.
-- Rejects invalid/tampered/non-contiguous event batches without mutating stored events.
+- Accepts typed command records and converts them into the next chain event.
+- Rejects invalid command bodies and invalid/tampered/non-contiguous event batches without mutating stored events.
 - Returns stored events by chain id.
 - Projects stored events into graph state for entity, edge, identity, and diagnostic queries.
 - Supports memory and SQLite event storage.

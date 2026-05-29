@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  createEntityCreateCommand,
+  createEntityUpdateCommand,
+} from '@sphere/commands';
 import { createSqliteEventStore } from '@sphere/event-store';
 import { linkEvent, withEventHash } from '@sphere/events';
 import type { Event, EventWithoutHash } from '@sphere/types';
@@ -10,6 +14,18 @@ const schemaVersion = '0.1.0' as const;
 const chainId = '019e42ae-9c00-7000-8000-000000000000';
 const actorId = '019e42ae-9c00-7000-8000-000000000001';
 const entityId = '019e42ae-9c00-7000-8000-000000000002';
+
+function fixedIds(...ids: string[]) {
+  let index = 0;
+  return () => {
+    const id = ids[index];
+    if (id === undefined) {
+      throw new Error('No fixed test id available');
+    }
+    index += 1;
+    return id;
+  };
+}
 
 function baseEvent(overrides: Partial<EventWithoutHash>): EventWithoutHash {
   return {
@@ -139,6 +155,80 @@ describe('Sphere reference node API', () => {
 
     const events = await app.inject({ method: 'GET', url: `/chains/${chainId}/events` });
     expect(events.statusCode).toBe(200);
+    expect(events.json()).toEqual({ chainId, events: [] });
+  });
+
+  it('accepts commands and appends generated events at the chain tip', async () => {
+    const now = new Date('2026-05-28T00:00:00.000Z');
+    const app = buildNodeApp({
+      now: () => now,
+      createId: fixedIds(
+        '019e42ae-9c00-7000-8000-000000000012',
+        '019e42ae-9c00-7000-8000-000000000013',
+      ),
+    });
+    const createCommand = createEntityCreateCommand({
+      actorId,
+      entity: {
+        id: entityId,
+        kind: 'person',
+        name: 'Ada Raver',
+        metadata: { crew: 'test-collective' },
+        createdAt: '2026-05-28T00:00:00.000Z',
+        updatedAt: '2026-05-28T00:00:00.000Z',
+        schemaVersion,
+      },
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000112'),
+    });
+    const updateCommand = createEntityUpdateCommand({
+      actorId,
+      entityId,
+      patch: { name: 'Ada Commanded', metadata: { role: 'organizer' } },
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000113'),
+    });
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/commands`,
+      payload: { command: createCommand },
+    });
+    const updateResponse = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/commands`,
+      payload: { command: updateCommand },
+    });
+
+    expect(createResponse.statusCode).toBe(201);
+    expect(createResponse.json()).toMatchObject({ accepted: true, chainId, event: { sequence: 1, action: 'entity.create' } });
+    expect(updateResponse.statusCode).toBe(201);
+    expect(updateResponse.json()).toMatchObject({ accepted: true, chainId, event: { sequence: 2, action: 'entity.update' } });
+
+    const events = await app.inject({ method: 'GET', url: `/chains/${chainId}/events` });
+    expect(events.json().events).toHaveLength(2);
+    expect(events.json().events[1].previousHash).toBe(events.json().events[0].hash);
+
+    const entity = await app.inject({ method: 'GET', url: `/chains/${chainId}/graph/entities/${entityId}` });
+    expect(entity.json()).toMatchObject({
+      id: entityId,
+      name: 'Ada Commanded',
+      metadata: { crew: 'test-collective', role: 'organizer' },
+    });
+  });
+
+  it('rejects invalid command request bodies without appending events', async () => {
+    const app = buildNodeApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/commands`,
+      payload: { command: { action: 'entity.create' } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: 'invalid_command_body' });
+    const events = await app.inject({ method: 'GET', url: `/chains/${chainId}/events` });
     expect(events.json()).toEqual({ chainId, events: [] });
   });
 

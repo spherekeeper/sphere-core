@@ -56,3 +56,16 @@ await client.submitEvents({ chainId, events: [event] });
 ```
 
 Non-2xx node responses throw `CommandSubmissionError` with `status` and parsed `details`.
+
+## Node command endpoint
+
+The reference node also accepts commands directly:
+
+```http
+POST /chains/:chainId/commands
+Content-Type: application/json
+
+{ "command": { /* Command */ } }
+```
+
+The node derives the next sequence/previous hash from the chain tip, converts the command to an event with `createCommandEvent`, appends it, and returns `{ accepted, chainId, event }`.

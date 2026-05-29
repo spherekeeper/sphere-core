@@ -64,7 +64,7 @@ The first kernel is implemented and test-covered:
 - replayable in-memory graph projection;
 - in-memory and SQLite event stores;
 - command-to-event helpers and node submission client;
-- minimal reference node API with memory/SQLite storage reporting;
+- minimal reference node API with memory/SQLite storage reporting and command acceptance;
 - runnable reference node service entrypoint with graceful shutdown.
 
-The next major runtime step is adding a basic command API endpoint so the node can accept intent-level commands as well as raw events.
+The next major runtime step is adding a small CLI/demo flow that creates commands and submits them to a running node.

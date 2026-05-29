@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
+import { createCommandEvent, type IdFactory } from '@sphere/commands';
 import {
   createInMemoryEventStore,
   EventStoreAppendError,
@@ -15,14 +16,19 @@ import {
   getProjectionDiagnostics,
   replayEvents,
 } from '@sphere/graph';
-import { SPHERE_SCHEMA_VERSION, type Event } from '@sphere/types';
+import { parseCommand } from '@sphere/schemas';
+import { SPHERE_SCHEMA_VERSION, type Command, type Event } from '@sphere/types';
 
 export interface NodeAppOptions {
   eventStore?: EventStore;
+  now?: () => Date;
+  createId?: IdFactory;
 }
 
 export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
   const eventStore = options.eventStore ?? createInMemoryEventStore();
+  const now = options.now ?? (() => new Date());
+  const createId = options.createId;
   const app = Fastify({ logger: false });
 
   app.get('/health', async () => ({ ok: true }));
@@ -61,6 +67,42 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
       appended: events.length,
       chainId: request.params.chainId,
       latestSequence: latest?.sequence ?? null,
+    });
+  });
+
+  app.post<{ Params: ChainParams; Body: AcceptCommandBody }>('/chains/:chainId/commands', async (request, reply) => {
+    const command = normalizeCommandBody(request.body);
+    if (command === undefined) {
+      return reply.code(400).send({ error: 'invalid_command_body' });
+    }
+
+    const latest = eventStore.getLatestEvent(request.params.chainId);
+    const event = createCommandEvent({
+      command,
+      chainId: request.params.chainId,
+      sequence: latest === undefined ? 1 : latest.sequence + 1,
+      ...(latest === undefined ? {} : { previousEvent: latest }),
+      now: now(),
+      ...(createId === undefined ? {} : { createId }),
+    });
+
+    try {
+      eventStore.append([event]);
+    } catch (error) {
+      if (error instanceof EventStoreAppendError) {
+        return reply.code(400).send({
+          error: 'event_store_append_failed',
+          code: error.code,
+          message: error.message,
+        });
+      }
+      throw error;
+    }
+
+    return reply.code(201).send({
+      accepted: true,
+      chainId: request.params.chainId,
+      event,
     });
   });
 
@@ -132,11 +174,26 @@ interface AppendEventsBody {
   events?: unknown;
 }
 
+interface AcceptCommandBody {
+  command?: unknown;
+}
+
 function normalizeEventsBody(body: AppendEventsBody | undefined): Event[] | undefined {
   if (body === undefined || !Array.isArray(body.events)) {
     return undefined;
   }
   return body.events as Event[];
+}
+
+function normalizeCommandBody(body: AcceptCommandBody | undefined): Command | undefined {
+  if (body === undefined || body.command === undefined) {
+    return undefined;
+  }
+  try {
+    return parseCommand(body.command);
+  } catch {
+    return undefined;
+  }
 }
 
 function projectChain(eventStore: EventStore, chainId: string) {
