@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { createSqliteEventStore } from '@sphere/event-store';
 import { linkEvent, withEventHash } from '@sphere/events';
 import type { Event, EventWithoutHash } from '@sphere/types';
 
@@ -76,6 +77,17 @@ describe('Sphere reference node API', () => {
       schemaVersion,
       storage: 'memory',
     });
+  });
+
+  it('reports SQLite storage when configured with a SQLite event store', async () => {
+    const store = createSqliteEventStore({ databasePath: ':memory:' });
+    const app = buildNodeApp({ eventStore: store });
+
+    const info = await app.inject({ method: 'GET', url: '/node/info' });
+
+    expect(info.statusCode).toBe(200);
+    expect(info.json()).toMatchObject({ storage: 'sqlite' });
+    store.close();
   });
 
   it('appends verified chain events and returns projected entity state', async () => {

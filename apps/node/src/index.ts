@@ -1,6 +1,12 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
-import { createInMemoryEventStore, EventStoreAppendError, type EventStore } from '@sphere/event-store';
+import {
+  createInMemoryEventStore,
+  createSqliteEventStore,
+  EventStoreAppendError,
+  getEventStoreMetadata,
+  type EventStore,
+} from '@sphere/event-store';
 import {
   createGraphProjection,
   getEdgesFrom,
@@ -25,7 +31,7 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
   app.get('/node/info', async () => ({
     name: 'sphere-reference-node',
     schemaVersion: SPHERE_SCHEMA_VERSION,
-    storage: 'memory',
+    storage: getEventStoreMetadata(eventStore).storage,
   }));
 
   app.post<{ Params: ChainParams; Body: AppendEventsBody }>('/chains/:chainId/events', async (request, reply) => {
@@ -105,7 +111,10 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
 }
 
 export async function startNodeApp(): Promise<string> {
-  const app = buildNodeApp();
+  const eventStore = process.env.SPHERE_NODE_DB === undefined
+    ? createInMemoryEventStore()
+    : createSqliteEventStore({ databasePath: process.env.SPHERE_NODE_DB });
+  const app = buildNodeApp({ eventStore });
   const port = Number.parseInt(process.env.SPHERE_NODE_PORT ?? '3080', 10);
   return app.listen({ host: '0.0.0.0', port });
 }
