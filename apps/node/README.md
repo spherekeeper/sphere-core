@@ -62,7 +62,7 @@ GET  /chains/:chainId/graph/diagnostics
 
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
-This reference node is intended for local/trusted development. It does not implement authentication, authorization, or rate limiting yet; do not expose it to untrusted networks without adding those controls.
+This reference node is intended for local/trusted development. It does not implement authentication, authorization, or rate limiting yet; do not expose it to untrusted networks without adding those controls. See [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md) for the current boundary decision and pre-exposure checklist.
 
 ### Command endpoint
 

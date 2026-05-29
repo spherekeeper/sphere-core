@@ -26,6 +26,10 @@ The first canonical primitives are expected to be:
 
 Accepted mutations should produce events. Queryable graph state should be replayable from events.
 
+## Runtime security boundary
+
+The reference node is currently a local/trusted-development runtime. It intentionally does not implement app-level authentication or authorization yet; see [Runtime Security Boundary](runtime-security-boundary.md) for the current decision and the checklist required before exposing the node beyond trusted networks.
+
 ## Adapter model
 
 Adapters consume events and project Sphere state into external platforms. They must support idempotent handling, checkpoint/resume, reconciliation, and explicit error states.
