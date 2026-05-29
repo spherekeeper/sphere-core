@@ -1,0 +1,19 @@
+{
+  "name": "@sphere/node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "cd ../.. && vitest run apps/node/test/node.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@sphere/event-store": "workspace:*",
+    "@sphere/events": "workspace:*",
+    "@sphere/graph": "workspace:*",
+    "@sphere/types": "workspace:*",
+    "fastify": "^4.28.1"
+  }
+}
