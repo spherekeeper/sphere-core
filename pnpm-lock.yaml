@@ -20,6 +20,9 @@ importers:
 
   apps/node:
     dependencies:
+      '@sphere/commands':
+        specifier: workspace:*
+        version: link:../../packages/commands
       '@sphere/event-store':
         specifier: workspace:*
         version: link:../../packages/event-store
@@ -29,6 +32,9 @@ importers:
       '@sphere/graph':
         specifier: workspace:*
         version: link:../../packages/graph
+      '@sphere/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@sphere/types':
         specifier: workspace:*
         version: link:../../packages/types
