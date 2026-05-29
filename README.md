@@ -62,7 +62,7 @@ The first kernel is implemented and test-covered:
 - deterministic SHA-256 event hashing;
 - event hash-chain verification;
 - replayable in-memory graph projection;
-- in-memory event store;
-- minimal in-memory reference node API.
+- in-memory and SQLite event stores;
+- minimal reference node API with memory/SQLite storage reporting.
 
-The next major runtime step is durable SQLite-backed storage for the reference node.
+The next major runtime step is adding a small runtime entrypoint/CLI and then beginning command submission helpers on top of the node API.

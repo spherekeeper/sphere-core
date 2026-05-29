@@ -1,9 +1,13 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+
 import { describe, expect, it } from 'vitest';
 
 import { linkEvent, withEventHash } from '@sphere/events';
 import type { Event, EventWithoutHash } from '@sphere/types';
 
-import { createInMemoryEventStore, EventStoreAppendError } from '../src/index.js';
+import { createInMemoryEventStore, createSqliteEventStore, EventStoreAppendError } from '../src/index.js';
 
 const actorId = '019e42ae-9c00-7000-8000-000000000002';
 const subjectId = '019e42ae-9c00-7000-8000-000000000003';
@@ -85,5 +89,40 @@ describe('@sphere/event-store', () => {
     expect(store.getEvents(first!.chainId)).toEqual([first]);
     store.append([second!]);
     expect(store.getLatestEvent(first!.chainId)).toEqual(second);
+  });
+
+  it('persists verified chains across SQLite event store instances', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'sphere-event-store-'));
+    const databasePath = join(tempDir, 'events.sqlite');
+    const chain = validChain(
+      eventWithoutHash({ sequence: 1 }),
+      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2, action: 'entity.update' }),
+    );
+
+    try {
+      const writer = createSqliteEventStore({ databasePath });
+      writer.append(chain);
+      writer.close();
+
+      const reader = createSqliteEventStore({ databasePath });
+      expect(reader.getEvents(chain[0]!.chainId)).toEqual(chain);
+      expect(reader.getLatestEvent(chain[0]!.chainId)).toEqual(chain[1]);
+      reader.close();
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects invalid SQLite appends without persisting partial events', () => {
+    const store = createSqliteEventStore({ databasePath: ':memory:' });
+    const [first, second] = validChain(
+      eventWithoutHash({ sequence: 1 }),
+      eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2 }),
+    );
+    const invalidSecond = { ...second!, previousHash: 'broken' };
+
+    expect(() => store.append([first!, invalidSecond])).toThrow(EventStoreAppendError);
+    expect(store.getEvents(first!.chainId)).toEqual([]);
+    store.close();
   });
 });
