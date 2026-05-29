@@ -34,17 +34,19 @@ describe('Sphere node runtime', () => {
     });
   });
 
-  it('builds SQLite config from SPHERE_NODE_DB and validates port', () => {
+  it('builds SQLite and bearer-token config from environment and validates port', () => {
     const config = createNodeRuntimeConfig({
       SPHERE_NODE_DB: './sphere-events.sqlite',
       SPHERE_NODE_HOST: '127.0.0.1',
       SPHERE_NODE_PORT: '4090',
+      SPHERE_NODE_BEARER_TOKEN: 'dev-secret',
     });
 
     expect(config).toEqual({
       host: '127.0.0.1',
       port: 4090,
       storage: { kind: 'sqlite', databasePath: './sphere-events.sqlite' },
+      bearerToken: 'dev-secret',
     });
     expect(() => createNodeRuntimeConfig({ SPHERE_NODE_PORT: 'not-a-number' })).toThrow(/Invalid SPHERE_NODE_PORT/);
   });

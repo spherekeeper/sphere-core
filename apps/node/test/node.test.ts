@@ -95,6 +95,45 @@ describe('Sphere reference node API', () => {
     });
   });
 
+  it('requires a configured bearer token for chain endpoints only', async () => {
+    const app = buildNodeApp({ bearerToken: 'dev-secret' });
+    const event = entityCreateEvent();
+
+    const health = await app.inject({ method: 'GET', url: '/health' });
+    const info = await app.inject({ method: 'GET', url: '/node/info' });
+    const missing = await app.inject({ method: 'GET', url: `/chains/${chainId}/events` });
+    const wrong = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/events`,
+      headers: { authorization: 'Bearer wrong-secret' },
+      payload: { events: [event] },
+    });
+    const missingCommand = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/commands`,
+      payload: { command: { action: 'entity.create' } },
+    });
+    const missingProjection = await app.inject({ method: 'GET', url: `/chains/${chainId}/graph/entities` });
+    const authorized = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/events`,
+      headers: { authorization: 'Bearer dev-secret' },
+      payload: { events: [event] },
+    });
+
+    expect(health.statusCode).toBe(200);
+    expect(info.statusCode).toBe(200);
+    expect(missing.statusCode).toBe(401);
+    expect(missing.json()).toEqual({ error: 'unauthorized' });
+    expect(wrong.statusCode).toBe(401);
+    expect(wrong.json()).toEqual({ error: 'unauthorized' });
+    expect(missingCommand.statusCode).toBe(401);
+    expect(missingCommand.json()).toEqual({ error: 'unauthorized' });
+    expect(missingProjection.statusCode).toBe(401);
+    expect(missingProjection.json()).toEqual({ error: 'unauthorized' });
+    expect(authorized.statusCode).toBe(201);
+  });
+
   it('reports SQLite storage when configured with a SQLite event store', async () => {
     const store = createSqliteEventStore({ databasePath: ':memory:' });
     const app = buildNodeApp({ eventStore: store });

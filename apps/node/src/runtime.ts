@@ -10,6 +10,7 @@ export interface NodeRuntimeConfig {
   host: string;
   port: number;
   storage: NodeRuntimeStorageConfig;
+  bearerToken?: string;
 }
 
 export type NodeRuntimeStorageConfig =
@@ -58,6 +59,7 @@ export function createNodeRuntimeConfig(env: NodeJS.ProcessEnv = process.env): N
   const port = parseNodePort(env.SPHERE_NODE_PORT ?? '3080');
   const host = env.SPHERE_NODE_HOST ?? '0.0.0.0';
   const databasePath = env.SPHERE_NODE_DB;
+  const bearerToken = env.SPHERE_NODE_BEARER_TOKEN;
 
   return {
     host,
@@ -65,6 +67,7 @@ export function createNodeRuntimeConfig(env: NodeJS.ProcessEnv = process.env): N
     storage: databasePath === undefined || databasePath.length === 0
       ? { kind: 'memory' }
       : { kind: 'sqlite', databasePath },
+    ...(bearerToken === undefined || bearerToken.length === 0 ? {} : { bearerToken }),
   };
 }
 
@@ -72,7 +75,10 @@ export function createNodeRuntime(options: CreateNodeRuntimeOptions = {}): NodeR
   const config = options.config ?? createNodeRuntimeConfig();
   const logger = options.logger ?? defaultLogger;
   const eventStore = createEventStore(config.storage);
-  const app = buildNodeApp({ eventStore });
+  const app = buildNodeApp({
+    eventStore,
+    ...(config.bearerToken === undefined ? {} : { bearerToken: config.bearerToken }),
+  });
 
   return new FastifyNodeRuntime({ app, eventStore, config, logger });
 }

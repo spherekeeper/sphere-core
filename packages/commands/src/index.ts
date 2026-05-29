@@ -40,6 +40,7 @@ export interface CreateCommandEventOptions {
 
 export interface CommandSubmissionClientOptions {
   baseUrl: string;
+  bearerToken?: string;
   fetch?: typeof fetch;
 }
 
@@ -153,12 +154,13 @@ export function createCommandEvent(options: CreateCommandEventOptions): Event {
 export function createCommandSubmissionClient(options: CommandSubmissionClientOptions): CommandSubmissionClient {
   const baseUrl = options.baseUrl.replace(/\/+$/, '');
   const fetchImpl = options.fetch ?? fetch;
+  const headers = createJsonHeaders(options.bearerToken);
 
   return {
     async submitEvents(submitOptions: SubmitEventsOptions): Promise<AppendEventsResponse> {
       const response = await fetchImpl(`${baseUrl}/chains/${encodeURIComponent(submitOptions.chainId)}/events`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers,
         body: JSON.stringify({ events: submitOptions.events }),
       });
       const details = await parseResponseBody(response);
@@ -170,7 +172,7 @@ export function createCommandSubmissionClient(options: CommandSubmissionClientOp
     async submitCommand(submitOptions: SubmitCommandOptions): Promise<SubmitCommandResponse> {
       const response = await fetchImpl(`${baseUrl}/chains/${encodeURIComponent(submitOptions.chainId)}/commands`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers,
         body: JSON.stringify({ command: submitOptions.command }),
       });
       const details = await parseResponseBody(response);
@@ -223,6 +225,12 @@ function nextId(idFactory: IdFactory | undefined): string {
 
 function timestamp(now: Date | undefined): string {
   return (now ?? new Date()).toISOString();
+}
+
+function createJsonHeaders(bearerToken: string | undefined): Record<string, string> {
+  return bearerToken === undefined
+    ? { 'content-type': 'application/json' }
+    : { 'authorization': `Bearer ${bearerToken}`, 'content-type': 'application/json' };
 }
 
 async function parseResponseBody(response: Response): Promise<unknown> {
