@@ -138,6 +138,12 @@ export function getEntityTombstone(graph: GraphProjection, id: string): EntityTo
   return graph.entityTombstones.get(id);
 }
 
+export function listEntities(graph: GraphProjection): Entity[] {
+  return [...graph.entities.values()]
+    .filter((entity) => !graph.entityTombstones.has(entity.id))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
 export function getEdge(graph: GraphProjection, id: string): Edge | undefined {
   return graph.edges.get(id);
 }

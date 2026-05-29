@@ -217,6 +217,60 @@ describe('Sphere reference node API', () => {
     });
   });
 
+  it('accepts commands and exposes active entities as a read model', async () => {
+    const now = new Date('2026-05-28T00:00:00.000Z');
+    const secondEntityId = '019e42ae-9c00-7000-8000-000000000099';
+    const app = buildNodeApp({
+      now: () => now,
+      createId: fixedIds(
+        '019e42ae-9c00-7000-8000-000000000014',
+        '019e42ae-9c00-7000-8000-000000000015',
+      ),
+    });
+    const firstCommand = createEntityCreateCommand({
+      actorId,
+      entity: {
+        id: entityId,
+        kind: 'person',
+        name: 'Ada Raver',
+        metadata: { crew: 'test-collective' },
+        createdAt: '2026-05-28T00:00:00.000Z',
+        updatedAt: '2026-05-28T00:00:00.000Z',
+        schemaVersion,
+      },
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000114'),
+    });
+    const secondCommand = createEntityCreateCommand({
+      actorId,
+      entity: {
+        id: secondEntityId,
+        kind: 'group',
+        name: 'Bass Collective',
+        metadata: { city: 'Berlin' },
+        createdAt: '2026-05-28T00:00:00.000Z',
+        updatedAt: '2026-05-28T00:00:00.000Z',
+        schemaVersion,
+      },
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000115'),
+    });
+
+    await app.inject({ method: 'POST', url: `/chains/${chainId}/commands`, payload: { command: secondCommand } });
+    await app.inject({ method: 'POST', url: `/chains/${chainId}/commands`, payload: { command: firstCommand } });
+
+    const response = await app.inject({ method: 'GET', url: `/chains/${chainId}/graph/entities` });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      chainId,
+      entities: [
+        expect.objectContaining({ id: entityId, name: 'Ada Raver' }),
+        expect.objectContaining({ id: secondEntityId, name: 'Bass Collective' }),
+      ],
+    });
+  });
+
   it('rejects invalid command request bodies without appending events', async () => {
     const app = buildNodeApp();
 

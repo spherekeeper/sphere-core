@@ -52,6 +52,7 @@ GET  /node/info
 POST /chains/:chainId/events
 POST /chains/:chainId/commands
 GET  /chains/:chainId/events
+GET  /chains/:chainId/graph/entities
 GET  /chains/:chainId/graph/entities/:entityId
 GET  /chains/:chainId/graph/edges/from/:entityId
 GET  /chains/:chainId/graph/edges/to/:entityId
