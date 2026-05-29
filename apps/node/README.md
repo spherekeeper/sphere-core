@@ -11,21 +11,38 @@ pnpm --filter @sphere/node test
 pnpm --filter @sphere/node typecheck
 ```
 
-## Storage
+## Running locally
 
-Default storage is memory-only:
+Start the node with memory storage on the default host/port (`0.0.0.0:3080`):
 
 ```bash
-pnpm --filter @sphere/node test
+pnpm --filter @sphere/node start
 ```
 
-Set `SPHERE_NODE_DB` when starting the node to use SQLite-backed event storage:
+Then check it:
+
+```bash
+curl http://127.0.0.1:3080/health
+curl http://127.0.0.1:3080/node/info
+```
+
+The package also exposes a local `sphere-node` bin for workspace/package-manager use.
+
+## Runtime configuration
+
+Environment variables:
+
+- `SPHERE_NODE_HOST`: listen host, defaults to `0.0.0.0`
+- `SPHERE_NODE_PORT`: listen port, defaults to `3080`
+- `SPHERE_NODE_DB`: optional SQLite database path; omitted means memory storage
+
+Example with SQLite persistence:
 
 ```bash
 SPHERE_NODE_DB=./sphere-events.sqlite SPHERE_NODE_PORT=3080 pnpm --filter @sphere/node start
 ```
 
-The current package exposes `startNodeApp()` for runtime entrypoints; a CLI/bin wrapper is still a later step.
+The runtime installs SIGINT/SIGTERM handlers and closes Fastify plus closeable event stores during shutdown.
 
 ## API surface
 
@@ -50,3 +67,4 @@ GET  /chains/:chainId/graph/diagnostics
 - Returns stored events by chain id.
 - Projects stored events into graph state for entity, edge, identity, and diagnostic queries.
 - Supports memory and SQLite event storage.
+- Runs as a local development service via `pnpm --filter @sphere/node start`.

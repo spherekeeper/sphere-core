@@ -2,7 +2,6 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import {
   createInMemoryEventStore,
-  createSqliteEventStore,
   EventStoreAppendError,
   getEventStoreMetadata,
   type EventStore,
@@ -111,12 +110,9 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
 }
 
 export async function startNodeApp(): Promise<string> {
-  const eventStore = process.env.SPHERE_NODE_DB === undefined
-    ? createInMemoryEventStore()
-    : createSqliteEventStore({ databasePath: process.env.SPHERE_NODE_DB });
-  const app = buildNodeApp({ eventStore });
-  const port = Number.parseInt(process.env.SPHERE_NODE_PORT ?? '3080', 10);
-  return app.listen({ host: '0.0.0.0', port });
+  const { createNodeRuntime, createNodeRuntimeConfig } = await import('./runtime.js');
+  const runtime = createNodeRuntime({ config: createNodeRuntimeConfig() });
+  return runtime.start();
 }
 
 interface ChainParams {
