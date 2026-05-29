@@ -53,4 +53,16 @@ pnpm typecheck
 
 ## Status
 
-Foundation skeleton only. See `docs/package-conventions.md` and the planning repo for the implementation plan.
+The first kernel is implemented and test-covered:
+
+- protocol types and JSON Schemas;
+- runtime schema and action-payload validation;
+- UUIDv7-compatible ID helpers;
+- canonical JSON/XML serialization;
+- deterministic SHA-256 event hashing;
+- event hash-chain verification;
+- replayable in-memory graph projection;
+- in-memory event store;
+- minimal in-memory reference node API.
+
+The next major runtime step is durable SQLite-backed storage for the reference node.
