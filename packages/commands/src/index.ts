@@ -48,14 +48,26 @@ export interface SubmitEventsOptions {
   events: readonly Event[];
 }
 
+export interface SubmitCommandOptions {
+  chainId: string;
+  command: Command;
+}
+
 export interface AppendEventsResponse {
   appended: number;
   chainId: string;
   latestSequence: number | null;
 }
 
+export interface SubmitCommandResponse {
+  accepted: boolean;
+  chainId: string;
+  event: Event;
+}
+
 export interface CommandSubmissionClient {
   submitEvents(options: SubmitEventsOptions): Promise<AppendEventsResponse>;
+  submitCommand(options: SubmitCommandOptions): Promise<SubmitCommandResponse>;
 }
 
 export class CommandSubmissionError extends Error {
@@ -154,6 +166,18 @@ export function createCommandSubmissionClient(options: CommandSubmissionClientOp
         throw new CommandSubmissionError(response.status, details);
       }
       return details as AppendEventsResponse;
+    },
+    async submitCommand(submitOptions: SubmitCommandOptions): Promise<SubmitCommandResponse> {
+      const response = await fetchImpl(`${baseUrl}/chains/${encodeURIComponent(submitOptions.chainId)}/commands`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ command: submitOptions.command }),
+      });
+      const details = await parseResponseBody(response);
+      if (!response.ok) {
+        throw new CommandSubmissionError(response.status, details);
+      }
+      return details as SubmitCommandResponse;
     },
   };
 }

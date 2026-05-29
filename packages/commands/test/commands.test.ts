@@ -143,6 +143,20 @@ describe('@sphere/commands', () => {
     });
   });
 
+  it('submits commands directly to a Sphere node', async () => {
+    const command = createEntityCreateCommand({ actorId, entity: entity(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000201') });
+    const event = createCommandEvent({ command, chainId, sequence: 1, now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000301') });
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ accepted: true, chainId, event }), { status: 201, headers: { 'content-type': 'application/json' } }));
+    const client = createCommandSubmissionClient({ baseUrl: 'http://127.0.0.1:3080/', fetch });
+
+    await expect(client.submitCommand({ chainId, command })).resolves.toEqual({ accepted: true, chainId, event });
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000100/commands', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ command }),
+    });
+  });
+
   it('surfaces non-2xx node submission errors with response details', async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'event_store_append_failed', code: 'event_hash_mismatch' }), { status: 400, headers: { 'content-type': 'application/json' } }));
     const client = createCommandSubmissionClient({ baseUrl: 'http://node.local/', fetch });
@@ -151,6 +165,18 @@ describe('@sphere/commands', () => {
       name: 'CommandSubmissionError',
       status: 400,
       details: { error: 'event_store_append_failed', code: 'event_hash_mismatch' },
+    });
+  });
+
+  it('surfaces non-2xx direct command submission errors with response details', async () => {
+    const command = createEntityCreateCommand({ actorId, entity: entity(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000201') });
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'invalid_command_body' }), { status: 400, headers: { 'content-type': 'application/json' } }));
+    const client = createCommandSubmissionClient({ baseUrl: 'http://node.local/', fetch });
+
+    await expect(client.submitCommand({ chainId, command })).rejects.toMatchObject({
+      name: 'CommandSubmissionError',
+      status: 400,
+      details: { error: 'invalid_command_body' },
     });
   });
 });

@@ -2,7 +2,7 @@
 
 Command-to-event helpers and node submission utilities for Sphere.
 
-This package is the first ergonomic layer above raw events. It builds typed `Command` records for common graph mutations, converts those commands into hash-linked events, and submits event batches to a Sphere reference node.
+This package is the first ergonomic layer above raw events. It builds typed `Command` records for common graph mutations, converts those commands into hash-linked events, and submits commands or event batches to a Sphere reference node.
 
 ## Supported command helpers
 
@@ -48,10 +48,20 @@ Generated event payloads preserve the projection contract (`payload.entity`, `pa
 
 ## Submitting to a node
 
+Submit commands directly when you want the node to derive the next sequence number and previous hash from the current chain tip:
+
 ```ts
 import { createCommandSubmissionClient } from '@sphere/commands';
 
 const client = createCommandSubmissionClient({ baseUrl: 'http://127.0.0.1:3080' });
+const result = await client.submitCommand({ chainId, command });
+
+console.log(result.event.sequence);
+```
+
+You can also submit already-built event batches:
+
+```ts
 await client.submitEvents({ chainId, events: [event] });
 ```
 
@@ -70,18 +80,6 @@ Content-Type: application/json
 
 The node derives the next sequence/previous hash from the chain tip, converts the command to an event with `createCommandEvent`, appends it, and returns `{ accepted, chainId, event }`. Because commands are intent-level records, clients do not provide sequence numbers or previous hashes on this endpoint.
 
-This package's `createCommandSubmissionClient` currently submits already-built events to `POST /chains/:chainId/events`. Until a dedicated `submitCommand` helper exists, submit direct commands with `fetch`/HTTP:
-
-```ts
-const response = await fetch(`${baseUrl}/chains/${encodeURIComponent(chainId)}/commands`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ command }),
-});
-
-if (!response.ok) {
-  throw new CommandSubmissionError(response.status, await response.json());
-}
-```
+`client.submitCommand({ chainId, command })` wraps this endpoint and returns the same response shape.
 
 The reference node is local/trusted-development software today; the command endpoint has no authentication or rate limiting yet.
