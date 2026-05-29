@@ -24,6 +24,7 @@ export interface NodeAppOptions {
   eventStore?: EventStore;
   now?: () => Date;
   createId?: IdFactory;
+  bearerToken?: string;
 }
 
 export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
@@ -31,6 +32,17 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
   const now = options.now ?? (() => new Date());
   const createId = options.createId;
   const app = Fastify({ logger: false });
+
+  if (options.bearerToken !== undefined) {
+    app.addHook('preHandler', async (request, reply) => {
+      if (!request.url.startsWith('/chains/')) {
+        return;
+      }
+      if (request.headers.authorization !== `Bearer ${options.bearerToken}`) {
+        return reply.code(401).send({ error: 'unauthorized' });
+      }
+    });
+  }
 
   app.get('/health', async () => ({ ok: true }));
 

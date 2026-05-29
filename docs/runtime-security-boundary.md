@@ -4,7 +4,7 @@ The current Sphere reference node is a local/trusted-development runtime. It is 
 
 ## Current decision
 
-Keep the reference node unauthenticated for now, but make the boundary explicit:
+Keep the reference node unauthenticated by default, but make the boundary explicit and support an optional trusted-development bearer-token gate:
 
 - Bind only in trusted environments.
 - Do not expose the node directly to untrusted networks.
@@ -15,7 +15,7 @@ This keeps early protocol and projection work simple while avoiding a false sens
 
 ## Trusted endpoints today
 
-The following endpoints mutate or reveal chain state and currently rely on the deployment boundary rather than app-level auth:
+The following endpoints mutate or reveal chain state and currently rely on the deployment boundary unless `SPHERE_NODE_BEARER_TOKEN` is configured:
 
 - `POST /chains/:chainId/events`
 - `POST /chains/:chainId/commands`
@@ -38,13 +38,13 @@ Add at least:
 5. **Audit logging**: record caller identity, chain id, endpoint, response status, and append result.
 6. **Transport security**: use TLS or run behind a trusted local reverse proxy that terminates TLS.
 
-## Likely first implementation step
+## Implemented trusted-development gate
 
-When Sphere needs a remotely reachable development node, add an optional shared bearer token:
+Sphere supports an optional shared bearer token for remotely reachable development nodes:
 
 - Configure via `SPHERE_NODE_BEARER_TOKEN`.
 - If unset, preserve current local/trusted-development behavior.
-- If set, require an `Authorization: Bearer configured-bearer-value` header for all `/chains/*` endpoints.
+- If set, require the configured bearer `Authorization` header for all `/chains/*` endpoints.
 - Treat this only as a trusted-development gate; do not treat a shared bearer token alone as sufficient production authorization.
 - Keep `/health` and `/node/info` unauthenticated unless deployment needs otherwise.
 

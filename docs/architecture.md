@@ -28,7 +28,7 @@ Accepted mutations should produce events. Queryable graph state should be replay
 
 ## Runtime security boundary
 
-The reference node is currently a local/trusted-development runtime. It intentionally does not implement app-level authentication or authorization yet; see [Runtime Security Boundary](runtime-security-boundary.md) for the current decision and the checklist required before exposing the node beyond trusted networks.
+The reference node is currently a local/trusted-development runtime. It has an optional shared bearer-token gate for `/chains/*` endpoints, but still intentionally lacks production-grade authorization and rate limiting; see [Runtime Security Boundary](runtime-security-boundary.md) for the current decision and the checklist required before exposing the node beyond trusted networks.
 
 ## Adapter model
 

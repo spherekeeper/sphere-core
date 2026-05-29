@@ -35,6 +35,7 @@ Environment variables:
 - `SPHERE_NODE_HOST`: listen host, defaults to `0.0.0.0`
 - `SPHERE_NODE_PORT`: listen port, defaults to `3080`
 - `SPHERE_NODE_DB`: optional SQLite database path; omitted means memory storage
+- `SPHERE_NODE_BEARER_TOKEN`: optional trusted-development bearer token for `/chains/*` endpoints; omitted means no app-level auth
 
 Example with SQLite persistence:
 
@@ -62,13 +63,15 @@ GET  /chains/:chainId/graph/diagnostics
 
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
-This reference node is intended for local/trusted development. It does not implement authentication, authorization, or rate limiting yet; do not expose it to untrusted networks without adding those controls. See [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md) for the current boundary decision and pre-exposure checklist.
+This reference node is intended for local/trusted development. By default, it does not implement authentication, authorization, or rate limiting. Setting `SPHERE_NODE_BEARER_TOKEN` requires a matching bearer `Authorization` header on `/chains/*` endpoints, but this is still only a development gate; do not expose it to untrusted networks without stronger controls. See [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md) for the current boundary decision and pre-exposure checklist.
 
 ### Command endpoint
 
 `POST /chains/:chainId/commands` accepts `{ "command": Command }`. Commands are intent-level records and do not carry chain position. The node derives `sequence` and `previousHash` from the current chain tip, converts the command into a hash-linked event, appends it, and returns `{ accepted, chainId, event }`.
 
 Example request:
+
+If `SPHERE_NODE_BEARER_TOKEN` is set, include the matching bearer `Authorization` header as well.
 
 ```bash
 curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/commands \

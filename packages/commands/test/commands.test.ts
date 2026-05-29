@@ -147,13 +147,27 @@ describe('@sphere/commands', () => {
     const command = createEntityCreateCommand({ actorId, entity: entity(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000201') });
     const event = createCommandEvent({ command, chainId, sequence: 1, now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000301') });
     const fetch = vi.fn(async () => new Response(JSON.stringify({ accepted: true, chainId, event }), { status: 201, headers: { 'content-type': 'application/json' } }));
-    const client = createCommandSubmissionClient({ baseUrl: 'http://127.0.0.1:3080/', fetch });
+    const client = createCommandSubmissionClient({ baseUrl: 'http://127.0.0.1:3080/', bearerToken: 'dev-secret', fetch });
 
     await expect(client.submitCommand({ chainId, command })).resolves.toEqual({ accepted: true, chainId, event });
     expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000100/commands', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'authorization': 'Bearer dev-secret', 'content-type': 'application/json' },
       body: JSON.stringify({ command }),
+    });
+  });
+
+  it('submits event batches directly to a Sphere node', async () => {
+    const command = createEntityCreateCommand({ actorId, entity: entity(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000202') });
+    const event = createCommandEvent({ command, chainId, sequence: 1, now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000302') });
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ appended: 1, chainId, latestSequence: 1 }), { status: 201, headers: { 'content-type': 'application/json' } }));
+    const client = createCommandSubmissionClient({ baseUrl: 'http://127.0.0.1:3080/', bearerToken: 'dev-secret', fetch });
+
+    await expect(client.submitEvents({ chainId, events: [event] })).resolves.toEqual({ appended: 1, chainId, latestSequence: 1 });
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000100/events', {
+      method: 'POST',
+      headers: { 'authorization': 'Bearer dev-secret', 'content-type': 'application/json' },
+      body: JSON.stringify({ events: [event] }),
     });
   });
 

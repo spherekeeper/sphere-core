@@ -53,7 +53,11 @@ Submit commands directly when you want the node to derive the next sequence numb
 ```ts
 import { createCommandSubmissionClient } from '@sphere/commands';
 
-const client = createCommandSubmissionClient({ baseUrl: 'http://127.0.0.1:3080' });
+const client = createCommandSubmissionClient({
+  baseUrl: 'http://127.0.0.1:3080',
+  // Optional: include this when the node is started with SPHERE_NODE_BEARER_TOKEN.
+  bearerToken: 'your-secret',
+});
 const result = await client.submitCommand({ chainId, command });
 
 console.log(result.event.sequence);
@@ -82,4 +86,4 @@ The node derives the next sequence/previous hash from the chain tip, converts th
 
 `client.submitCommand({ chainId, command })` wraps this endpoint and returns the same response shape.
 
-The reference node is local/trusted-development software today; the command endpoint has no authentication or rate limiting yet.
+The reference node is local/trusted-development software today. By default, the command endpoint has no authentication or rate limiting. If the node is started with `SPHERE_NODE_BEARER_TOKEN`, pass the same value as `bearerToken` so the client sends a matching bearer `Authorization` header.
