@@ -129,9 +129,12 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
 
   app.get<{ Params: ChainParams; Querystring: EventRangeQuery }>('/chains/:chainId/events', async (request, reply) => {
     try {
+      const range = parseEventRangeQuery(request.query);
+      const events = eventStore.getEventsRange(request.params.chainId, range);
       return {
         chainId: request.params.chainId,
-        events: eventStore.getEventsRange(request.params.chainId, parseEventRangeQuery(request.query)),
+        events,
+        ...(isRangedEventQuery(range) ? { pageInfo: createEventPageInfo(events, range) } : {}),
       };
     } catch (error) {
       if (error instanceof RangeError) {
@@ -218,6 +221,18 @@ interface EventRangeQuery {
   limit?: string;
 }
 
+interface ParsedEventRangeQuery {
+  afterSequence?: number;
+  limit?: number;
+}
+
+interface EventPageInfo {
+  afterSequence: number | null;
+  limit: number | null;
+  returned: number;
+  nextAfterSequence: number | null;
+}
+
 function normalizeEventsBody(body: AppendEventsBody | undefined): Event[] | undefined {
   if (body === undefined || !Array.isArray(body.events)) {
     return undefined;
@@ -236,10 +251,24 @@ function normalizeCommandBody(body: AcceptCommandBody | undefined): Command | un
   }
 }
 
-function parseEventRangeQuery(query: EventRangeQuery) {
+function parseEventRangeQuery(query: EventRangeQuery): ParsedEventRangeQuery {
   return {
     ...(query.afterSequence === undefined ? {} : { afterSequence: parseIntegerQuery('afterSequence', query.afterSequence) }),
     ...(query.limit === undefined ? {} : { limit: parseIntegerQuery('limit', query.limit) }),
+  };
+}
+
+function isRangedEventQuery(range: ParsedEventRangeQuery): boolean {
+  return range.afterSequence !== undefined || range.limit !== undefined;
+}
+
+function createEventPageInfo(events: readonly Event[], range: ParsedEventRangeQuery): EventPageInfo {
+  const lastEvent = events[events.length - 1];
+  return {
+    afterSequence: range.afterSequence ?? null,
+    limit: range.limit ?? null,
+    returned: events.length,
+    nextAfterSequence: lastEvent?.sequence ?? range.afterSequence ?? null,
   };
 }
 

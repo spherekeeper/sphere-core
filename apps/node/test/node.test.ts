@@ -165,7 +165,16 @@ describe('Sphere reference node API', () => {
 
     const rangedEvents = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?afterSequence=1&limit=1` });
     expect(rangedEvents.statusCode).toBe(200);
-    expect(rangedEvents.json()).toEqual({ chainId, events: [second] });
+    expect(rangedEvents.json()).toEqual({
+      chainId,
+      events: [second],
+      pageInfo: {
+        afterSequence: 1,
+        limit: 1,
+        returned: 1,
+        nextAfterSequence: 2,
+      },
+    });
 
     const entity = await app.inject({ method: 'GET', url: `/chains/${chainId}/graph/entities/${entityId}` });
     expect(entity.statusCode).toBe(200);
@@ -173,6 +182,44 @@ describe('Sphere reference node API', () => {
       id: entityId,
       name: 'Ada Updated',
       metadata: { crew: 'test-collective', role: 'organizer' },
+    });
+  });
+
+  it('returns page cursors for limit-only and empty ranged event pages', async () => {
+    const app = buildNodeApp();
+    const first = entityCreateEvent();
+    const second = entityUpdateEvent(first);
+
+    await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/events`,
+      payload: { events: [first, second] },
+    });
+
+    const limitOnly = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?limit=1` });
+    expect(limitOnly.statusCode).toBe(200);
+    expect(limitOnly.json()).toEqual({
+      chainId,
+      events: [first],
+      pageInfo: {
+        afterSequence: null,
+        limit: 1,
+        returned: 1,
+        nextAfterSequence: 1,
+      },
+    });
+
+    const emptyPage = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?afterSequence=2&limit=1` });
+    expect(emptyPage.statusCode).toBe(200);
+    expect(emptyPage.json()).toEqual({
+      chainId,
+      events: [],
+      pageInfo: {
+        afterSequence: 2,
+        limit: 1,
+        returned: 0,
+        nextAfterSequence: 2,
+      },
     });
   });
 
@@ -217,7 +264,16 @@ describe('Sphere reference node API', () => {
       const response = await app.inject({ method: 'GET', url: `/chains/${chainId}/events?afterSequence=1&limit=1` });
 
       expect(response.statusCode).toBe(200);
-      expect(response.json()).toEqual({ chainId, events: [second] });
+      expect(response.json()).toEqual({
+        chainId,
+        events: [second],
+        pageInfo: {
+          afterSequence: 1,
+          limit: 1,
+          returned: 1,
+          nextAfterSequence: 2,
+        },
+      });
     } finally {
       store.close();
     }

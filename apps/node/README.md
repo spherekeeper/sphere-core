@@ -61,11 +61,46 @@ GET  /chains/:chainId/graph/identity/:platform/:platformId
 GET  /chains/:chainId/graph/diagnostics
 ```
 
-`GET /chains/:chainId/events` accepts optional `afterSequence` and `limit` query parameters for ranged reads. `afterSequence` is exclusive and `limit` must be positive.
+`GET /chains/:chainId/events` accepts optional `afterSequence` and `limit` query parameters for ranged reads. `afterSequence` is exclusive and `limit` must be positive. Ranged responses include `pageInfo` with the requested cursor, requested limit, returned count, and `nextAfterSequence` cursor.
 
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
 This reference node is intended for local/trusted development. By default, it does not implement authentication, authorization, or rate limiting. Setting `SPHERE_NODE_BEARER_TOKEN` requires a matching bearer `Authorization` header on `/chains/*` endpoints, but this is still only a development gate; do not expose it to untrusted networks without stronger controls. See [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md) for the current boundary decision and pre-exposure checklist.
+
+### Ranged event reads
+
+Fetch all events in a chain:
+
+```bash
+curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/events
+```
+
+Fetch a page after a known sequence:
+
+```bash
+curl -s 'http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/events?afterSequence=1&limit=100'
+```
+
+Ranged response shape:
+
+```json
+{
+  "chainId": "019e42ae-9c00-7000-8000-000000000000",
+  "events": [
+    { "sequence": 2, "id": "019e42ae-9c00-7000-8000-000000000011" }
+  ],
+  "pageInfo": {
+    "afterSequence": 1,
+    "limit": 100,
+    "returned": 1,
+    "nextAfterSequence": 2
+  }
+}
+```
+
+Use `pageInfo.nextAfterSequence` as the next request's `afterSequence` cursor. If a ranged response returns no events, `nextAfterSequence` remains the requested `afterSequence` or `null` when only `limit` was supplied.
+
+Invalid range query parameters return `400` with `invalid_event_range`.
 
 ### Command endpoint
 

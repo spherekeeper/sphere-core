@@ -47,4 +47,12 @@ const nextEvents = store.getEventsAfter(chainId, 10);
 const page = store.getEventsRange(chainId, { afterSequence: 10, limit: 100 });
 ```
 
+Range semantics:
+
+- `afterSequence` is exclusive: `10` returns events with sequence `> 10`.
+- `limit` is optional, but when present must be a positive integer.
+- `getEventsAfter(chainId, sequence)` is shorthand for `getEventsRange(chainId, { afterSequence: sequence })`.
+- Empty pages return `[]`; callers can keep their prior cursor when no events are returned.
+- Memory and SQLite implementations use the same ordering: ascending `sequence` within the requested chain.
+
 Memory and SQLite implementations share the same conformance tests.
