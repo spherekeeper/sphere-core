@@ -39,6 +39,14 @@ const identityFixture = JSON.parse(
   readFileSync(join(repoRoot, 'specs/test-vectors/graph-projection/identity-link-unlink-chain.json'), 'utf8'),
 ) as Event[];
 
+function loadGraphProjectionFixture(name: string): { events: Event[]; snapshot: unknown } {
+  const fixtureRoot = join(repoRoot, 'specs/test-vectors/graph-projection', name);
+  return {
+    events: JSON.parse(readFileSync(join(fixtureRoot, 'events.json'), 'utf8')) as Event[],
+    snapshot: JSON.parse(readFileSync(join(fixtureRoot, 'snapshot.json'), 'utf8')),
+  };
+}
+
 const baseEvent = chainFixture[0]!;
 const entityId = '019e42ae-9c00-7000-8000-000000000004';
 const actorId = '019e42ae-9c00-7000-8000-000000000002';
@@ -469,6 +477,14 @@ describe('@sphere/graph', () => {
     expect(graph.skippedEventIds).toEqual([chain[0]!.id]);
     expect(graph.lastReplayedEvent).toEqual(chain[1]);
     expect(getEntity(graph, entityId)?.name).toBe('After Skip');
+  });
+
+  it('replays graph projection JSON fixtures into deterministic snapshots', () => {
+    const fixture = loadGraphProjectionFixture('comprehensive-snapshot');
+
+    const graph = replayEvents(fixture.events);
+
+    expect(snapshotGraphProjection(graph)).toEqual(fixture.snapshot);
   });
 
   it('creates deterministic JSON projection snapshots for fixtures and conformance checks', () => {

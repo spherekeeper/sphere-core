@@ -1,0 +1,78 @@
+{
+  "entities": [
+    {
+      "id": "019e42ae-9c00-7000-8000-000000000802",
+      "kind": "group",
+      "name": "Fixture Collective Updated",
+      "metadata": {
+        "city": "Berlin",
+        "focus": "safety"
+      },
+      "createdAt": "2026-05-30T00:00:00.000Z",
+      "updatedAt": "2026-05-30T00:01:00.000Z",
+      "schemaVersion": "0.1.0"
+    },
+    {
+      "id": "019e42ae-9c00-7000-8000-000000000803",
+      "kind": "person",
+      "name": "Fixture Organizer",
+      "metadata": {
+        "role": "door"
+      },
+      "createdAt": "2026-05-30T00:02:00.000Z",
+      "updatedAt": "2026-05-30T00:02:00.000Z",
+      "schemaVersion": "0.1.0"
+    }
+  ],
+  "entityTombstones": [
+    {
+      "id": "019e42ae-9c00-7000-8000-000000000802",
+      "deletedAt": "2026-05-30T00:08:00.000Z",
+      "deletedBy": "019e42ae-9c00-7000-8000-000000000801",
+      "eventId": "019e42ae-9c00-7000-8000-000000000819",
+      "reason": "fixture group retired"
+    }
+  ],
+  "edges": [
+    {
+      "id": "019e42ae-9c00-7000-8000-000000000804",
+      "sourceId": "019e42ae-9c00-7000-8000-000000000803",
+      "targetId": "019e42ae-9c00-7000-8000-000000000802",
+      "type": "member_of",
+      "metadata": {
+        "confidence": "fixture"
+      },
+      "createdAt": "2026-05-30T00:03:00.000Z",
+      "createdBy": "019e42ae-9c00-7000-8000-000000000801",
+      "schemaVersion": "0.1.0",
+      "deletedAt": "2026-05-30T00:07:00.000Z",
+      "deletedBy": "019e42ae-9c00-7000-8000-000000000801"
+    }
+  ],
+  "identityLinks": [],
+  "diagnostics": [
+    {
+      "code": "invalid_event_payload",
+      "severity": "error",
+      "eventId": "019e42ae-9c00-7000-8000-000000000816",
+      "action": "identity.link",
+      "message": "Invalid payload for event action identity.link: /payload/identityLink/ must have required property 'platformId'; /payload/identityLink/ must have required property 'handle'; /payload/identityLink/ must have required property 'verified'; /payload/identityLink/ must have required property 'metadata'; /payload/identityLink/ must have required property 'createdAt'; /payload/identityLink/ must have required property 'updatedAt'; /payload/identityLink/ must have required property 'schemaVersion'",
+      "resourceId": "019e42ae-9c00-7000-8000-000000000806"
+    }
+  ],
+  "appliedEventIds": [
+    "019e42ae-9c00-7000-8000-000000000811",
+    "019e42ae-9c00-7000-8000-000000000812",
+    "019e42ae-9c00-7000-8000-000000000813",
+    "019e42ae-9c00-7000-8000-000000000814",
+    "019e42ae-9c00-7000-8000-000000000815",
+    "019e42ae-9c00-7000-8000-000000000817",
+    "019e42ae-9c00-7000-8000-000000000818",
+    "019e42ae-9c00-7000-8000-000000000819"
+  ],
+  "skippedEventIds": [
+    "019e42ae-9c00-7000-8000-000000000816"
+  ],
+  "lastAppliedEventId": "019e42ae-9c00-7000-8000-000000000819",
+  "lastReplayedEventId": "019e42ae-9c00-7000-8000-000000000819"
+}

@@ -1,0 +1,220 @@
+[
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000811",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 1,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000802",
+    "action": "entity.create",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000802",
+    "timestamp": "2026-05-30T00:00:00.000Z",
+    "payload": {
+      "entity": {
+        "id": "019e42ae-9c00-7000-8000-000000000802",
+        "kind": "group",
+        "name": "Fixture Collective",
+        "metadata": {
+          "city": "Berlin"
+        },
+        "createdAt": "2026-05-30T00:00:00.000Z",
+        "updatedAt": "2026-05-30T00:00:00.000Z",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": null,
+    "hash": "3bdd5631d419ae80317736456ac5eed26524bd8dba23fee04ed0644ade5413fd"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000812",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 2,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000802",
+    "action": "entity.update",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000802",
+    "timestamp": "2026-05-30T00:01:00.000Z",
+    "payload": {
+      "entity": {
+        "name": "Fixture Collective Updated",
+        "metadata": {
+          "focus": "safety"
+        }
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "3bdd5631d419ae80317736456ac5eed26524bd8dba23fee04ed0644ade5413fd",
+    "hash": "12cf605a7b8076c1fbfd1f4ff7785896dd8866965e78e50db41193467245d67a"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000813",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 3,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000803",
+    "action": "entity.create",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000803",
+    "timestamp": "2026-05-30T00:02:00.000Z",
+    "payload": {
+      "entity": {
+        "id": "019e42ae-9c00-7000-8000-000000000803",
+        "kind": "person",
+        "name": "Fixture Organizer",
+        "metadata": {
+          "role": "door"
+        },
+        "createdAt": "2026-05-30T00:02:00.000Z",
+        "updatedAt": "2026-05-30T00:02:00.000Z",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "12cf605a7b8076c1fbfd1f4ff7785896dd8866965e78e50db41193467245d67a",
+    "hash": "d85cbff8947fa3919919bb6a0bae080bfd02dadded277666dd7c20b37b55c275"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000814",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 4,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000803",
+    "action": "edge.create",
+    "resourceType": "edge",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000804",
+    "timestamp": "2026-05-30T00:03:00.000Z",
+    "payload": {
+      "edge": {
+        "id": "019e42ae-9c00-7000-8000-000000000804",
+        "sourceId": "019e42ae-9c00-7000-8000-000000000803",
+        "targetId": "019e42ae-9c00-7000-8000-000000000802",
+        "type": "member_of",
+        "metadata": {
+          "confidence": "fixture"
+        },
+        "createdAt": "2026-05-30T00:03:00.000Z",
+        "createdBy": "019e42ae-9c00-7000-8000-000000000801",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "d85cbff8947fa3919919bb6a0bae080bfd02dadded277666dd7c20b37b55c275",
+    "hash": "ff2dd83ccf22c43731baa1d7958c6fda5cc7ce1cf8121645d209646a32cd104d"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000815",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 5,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000803",
+    "action": "identity.link",
+    "resourceType": "identity_link",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000805",
+    "timestamp": "2026-05-30T00:04:00.000Z",
+    "payload": {
+      "identityLink": {
+        "id": "019e42ae-9c00-7000-8000-000000000805",
+        "entityId": "019e42ae-9c00-7000-8000-000000000803",
+        "platform": "telegram",
+        "platformId": "fixture-organizer",
+        "handle": "@fixture",
+        "verified": true,
+        "metadata": {
+          "source": "fixture"
+        },
+        "createdAt": "2026-05-30T00:04:00.000Z",
+        "updatedAt": "2026-05-30T00:04:00.000Z",
+        "schemaVersion": "0.1.0"
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "ff2dd83ccf22c43731baa1d7958c6fda5cc7ce1cf8121645d209646a32cd104d",
+    "hash": "36f48228ab87843ac6c852606fd09a05d04cfa076291a8baf4c00189e26816c5"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000816",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 6,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000803",
+    "action": "identity.link",
+    "resourceType": "identity_link",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000806",
+    "timestamp": "2026-05-30T00:05:00.000Z",
+    "payload": {
+      "identityLink": {
+        "id": "019e42ae-9c00-7000-8000-000000000806",
+        "entityId": "019e42ae-9c00-7000-8000-000000000803",
+        "platform": "discord"
+      }
+    },
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "36f48228ab87843ac6c852606fd09a05d04cfa076291a8baf4c00189e26816c5",
+    "hash": "c6243168fd4398ba22ec60743ce9ba2d37e3385db1a9ee1542e4d5e2f82f0ce2"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000817",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 7,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000803",
+    "action": "identity.unlink",
+    "resourceType": "identity_link",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000805",
+    "timestamp": "2026-05-30T00:06:00.000Z",
+    "payload": {},
+    "reason": null,
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "c6243168fd4398ba22ec60743ce9ba2d37e3385db1a9ee1542e4d5e2f82f0ce2",
+    "hash": "c65b5d23b7b6fd236baeac487635bcb2018319844d5d6795e439cc5f302a2d30"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000818",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 8,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000803",
+    "action": "edge.delete",
+    "resourceType": "edge",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000804",
+    "timestamp": "2026-05-30T00:07:00.000Z",
+    "payload": {},
+    "reason": "fixture edge retired",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "c65b5d23b7b6fd236baeac487635bcb2018319844d5d6795e439cc5f302a2d30",
+    "hash": "438d66f3ecc0fcbad3efa369be3f4136a3f0680dc0d8f32e2f2c146555383ae6"
+  },
+  {
+    "id": "019e42ae-9c00-7000-8000-000000000819",
+    "chainId": "019e42ae-9c00-7000-8000-000000000800",
+    "sequence": 9,
+    "actorId": "019e42ae-9c00-7000-8000-000000000801",
+    "subjectId": "019e42ae-9c00-7000-8000-000000000802",
+    "action": "entity.delete",
+    "resourceType": "entity",
+    "resourceId": "019e42ae-9c00-7000-8000-000000000802",
+    "timestamp": "2026-05-30T00:08:00.000Z",
+    "payload": {},
+    "reason": "fixture group retired",
+    "schemaVersion": "0.1.0",
+    "hashAlgorithm": "sha256",
+    "previousHash": "438d66f3ecc0fcbad3efa369be3f4136a3f0680dc0d8f32e2f2c146555383ae6",
+    "hash": "35bf37a06a5e7cf8c8d0db048f93a6fe267f4a50cd6faab1d425b222b7437b04"
+  }
+]
