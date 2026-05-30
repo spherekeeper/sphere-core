@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 
 import { describe, expect, it } from 'vitest';
 import {
+  SPHERE_SCHEMA_VERSION,
   parseCommand,
   parseEdge,
   parseEntity,
@@ -45,6 +46,28 @@ describe('@sphere/schemas', () => {
     expect(edgeSchema.title).toBe('Sphere Edge');
     expect(eventSchema.title).toBe('Sphere Event');
     expect(commandSchema.title).toBe('Sphere Command');
+  });
+
+  it('keeps schema IDs and schemaVersion constants aligned with the current protocol version', () => {
+    const schemas = [commandSchema, edgeSchema, entitySchema, eventSchema, identityLinkSchema];
+
+    for (const schema of schemas) {
+      expect(schema.$id).toContain(`/draft/${SPHERE_SCHEMA_VERSION}/`);
+      expect(schema.properties.schemaVersion.const).toBe(SPHERE_SCHEMA_VERSION);
+    }
+  });
+
+  it('rejects records from unsupported schema versions', () => {
+    const result = validateEvent({
+      ...entityCreateEvent,
+      schemaVersion: '0.2.0',
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      const failure = result as Extract<typeof result, { ok: false }>;
+      expect(failure.errors.join('\n')).toContain('/schemaVersion');
+    }
   });
 
   it('validates all current example fixtures', () => {

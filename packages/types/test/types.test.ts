@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   EDGE_TYPES,
   ENTITY_KINDS,
+  SPHERE_PROTOCOL_VERSION,
   SPHERE_SCHEMA_VERSION,
+  SPHERE_SUPPORTED_SCHEMA_VERSIONS,
+  isSupportedSchemaVersion,
   type Edge,
   type Entity,
   type Event,
@@ -11,7 +14,12 @@ import {
 
 describe('@sphere/types', () => {
   it('exposes stable v0.1 protocol constants', () => {
-    expect(SPHERE_SCHEMA_VERSION).toBe('0.1.0');
+    expect(SPHERE_PROTOCOL_VERSION).toBe('0.1.0');
+    expect(SPHERE_SCHEMA_VERSION).toBe(SPHERE_PROTOCOL_VERSION);
+    expect(SPHERE_SUPPORTED_SCHEMA_VERSIONS).toEqual(['0.1.0']);
+    expect(isSupportedSchemaVersion('0.1.0')).toBe(true);
+    expect(isSupportedSchemaVersion('0.2.0')).toBe(false);
+    expect(isSupportedSchemaVersion(null)).toBe(false);
     expect(ENTITY_KINDS).toContain('person');
     expect(ENTITY_KINDS).toContain('group');
     expect(EDGE_TYPES).toContain('trusts');

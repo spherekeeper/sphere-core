@@ -10,6 +10,12 @@ import type {
   Event,
   IdentityLink,
 } from '@sphere/types';
+export {
+  SPHERE_PROTOCOL_VERSION,
+  SPHERE_SCHEMA_VERSION,
+  SPHERE_SUPPORTED_SCHEMA_VERSIONS,
+  isSupportedSchemaVersion,
+} from '@sphere/types';
 
 const requireJson = createRequire(import.meta.url);
 

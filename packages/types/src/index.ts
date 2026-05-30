@@ -1,4 +1,12 @@
-export const SPHERE_SCHEMA_VERSION = '0.1.0' as const;
+export const SPHERE_PROTOCOL_VERSION = '0.1.0' as const;
+export const SPHERE_SCHEMA_VERSION = SPHERE_PROTOCOL_VERSION;
+export const SPHERE_SUPPORTED_SCHEMA_VERSIONS = [SPHERE_PROTOCOL_VERSION] as const;
+
+export type SchemaVersion = (typeof SPHERE_SUPPORTED_SCHEMA_VERSIONS)[number];
+
+export function isSupportedSchemaVersion(value: unknown): value is SchemaVersion {
+  return typeof value === 'string' && (SPHERE_SUPPORTED_SCHEMA_VERSIONS as readonly string[]).includes(value);
+}
 
 export const ENTITY_KINDS = [
   'person',
@@ -43,8 +51,6 @@ export type ResourceType = (typeof RESOURCE_TYPES)[number];
 export const HASH_ALGORITHMS = ['sha256'] as const;
 
 export type HashAlgorithm = (typeof HASH_ALGORITHMS)[number];
-
-export type SchemaVersion = typeof SPHERE_SCHEMA_VERSION;
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
