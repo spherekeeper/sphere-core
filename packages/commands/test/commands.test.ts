@@ -10,6 +10,8 @@ import {
   createEntityUpdateCommand,
   createIdentityLinkCommand,
   createEdgeCreateCommand,
+  validateCommandPolicy,
+  CommandPolicyError,
 } from '../src/index.js';
 
 const now = new Date('2026-05-29T00:00:00.000Z');
@@ -127,6 +129,58 @@ describe('@sphere/commands', () => {
     });
     expect(second.previousHash).toBe(first.hash);
     expect(verifyEventChain([first, second])).toEqual({ ok: true, events: 2 });
+  });
+
+  it('validates known command action policy contracts before event creation', () => {
+    const valid = createEntityCreateCommand({ actorId, entity: entity(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000205') });
+    const mismatchedResource = {
+      ...valid,
+      resourceId: '019e42ae-9c00-7000-8000-000000000999',
+    };
+    const missingPayload = {
+      ...valid,
+      payload: {},
+    };
+
+    expect(validateCommandPolicy(valid)).toEqual({ ok: true });
+    expect(validateCommandPolicy(mismatchedResource)).toEqual({
+      ok: false,
+      errors: [expect.objectContaining({ code: 'resource_id_mismatch', path: '/resourceId' })],
+    });
+    expect(validateCommandPolicy(missingPayload)).toEqual({
+      ok: false,
+      errors: [expect.objectContaining({ code: 'missing_payload_object', path: '/payload/entity' })],
+    });
+    const unsupportedAction = {
+      ...valid,
+      action: 'entity.rename',
+      payload: { entity: { name: 'Renamed' } },
+    } as unknown as Parameters<typeof validateCommandPolicy>[0];
+    expect(validateCommandPolicy(unsupportedAction)).toEqual({
+      ok: false,
+      errors: [expect.objectContaining({ code: 'unsupported_action', path: '/action' })],
+    });
+    expect(() => createCommandEvent({
+      command: mismatchedResource,
+      chainId,
+      sequence: 1,
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000305'),
+    })).toThrow(CommandPolicyError);
+  });
+
+  it('keeps custom commands policy-open for app-specific handlers', () => {
+    expect(validateCommandPolicy({
+      id: '019e42ae-9c00-7000-8000-000000000206',
+      actorId,
+      action: 'custom:festival.rsvp',
+      resourceType: 'custom:event_registration',
+      resourceId: '019e42ae-9c00-7000-8000-000000000207',
+      payload: { response: 'yes' },
+      reason: null,
+      createdAt: now.toISOString(),
+      schemaVersion: '0.1.0',
+    })).toEqual({ ok: true });
   });
 
   it('submits generated command events to a Sphere node', async () => {

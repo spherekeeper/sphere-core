@@ -360,6 +360,58 @@ describe('Sphere reference node API', () => {
     expect(events.json()).toEqual({ chainId, events: [] });
   });
 
+  it('rejects schema-valid commands that fail policy without appending events', async () => {
+    const now = new Date('2026-05-28T00:00:00.000Z');
+    const app = buildNodeApp({ now: () => now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000016') });
+    const validCommand = createEntityCreateCommand({
+      actorId,
+      entity: {
+        id: entityId,
+        kind: 'person',
+        name: 'Ada Raver',
+        metadata: { crew: 'test-collective' },
+        createdAt: '2026-05-28T00:00:00.000Z',
+        updatedAt: '2026-05-28T00:00:00.000Z',
+        schemaVersion,
+      },
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000116'),
+    });
+    const invalidCommand = {
+      ...validCommand,
+      resourceId: '019e42ae-9c00-7000-8000-000000000099',
+    };
+    const unsupportedActionCommand = {
+      ...validCommand,
+      action: 'entity.rename',
+      payload: { entity: { name: 'Renamed' } },
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/commands`,
+      payload: { command: invalidCommand },
+    });
+    const unsupportedResponse = await app.inject({
+      method: 'POST',
+      url: `/chains/${chainId}/commands`,
+      payload: { command: unsupportedActionCommand },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      error: 'command_policy_failed',
+      errors: [expect.objectContaining({ code: 'resource_id_mismatch', path: '/resourceId' })],
+    });
+    expect(unsupportedResponse.statusCode).toBe(400);
+    expect(unsupportedResponse.json()).toEqual({
+      error: 'command_policy_failed',
+      errors: [expect.objectContaining({ code: 'unsupported_action', path: '/action' })],
+    });
+    const events = await app.inject({ method: 'GET', url: `/chains/${chainId}/events` });
+    expect(events.json()).toEqual({ chainId, events: [] });
+  });
+
   it('returns 404 for missing projected entities', async () => {
     const app = buildNodeApp();
 

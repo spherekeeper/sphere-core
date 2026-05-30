@@ -46,6 +46,23 @@ const nextEvent = createCommandEvent({
 
 Generated event payloads preserve the projection contract (`payload.entity`, `payload.identityLink`, or `payload.edge`) and also include the source `payload.command` for traceability.
 
+Before creating an event, `createCommandEvent` enforces the built-in command policy for known actions and throws `CommandPolicyError` if the command is internally inconsistent.
+
+## Command policy validation
+
+Use `validateCommandPolicy(command)` when accepting untrusted or hand-built commands. It returns `{ ok: true }` or `{ ok: false, errors }` with stable error codes and JSON-style paths.
+
+Current built-in policy checks for known actions:
+
+- `entity.create`, `entity.update`, `entity.delete` must use `resourceType: "entity"`.
+- `identity.link`, `identity.unlink` must use `resourceType: "identity_link"`.
+- `edge.create`, `edge.delete` must use `resourceType: "edge"`.
+- create/link commands must include the expected payload object and its `id` must match `resourceId`.
+- update/delete/unlink commands must include a non-empty `resourceId`; update commands must include the expected patch object.
+- non-`custom:*` actions outside the built-in command set are rejected with `unsupported_action`.
+
+`custom:*` commands are policy-open so app-specific handlers can define their own contracts without forking the core package.
+
 ## Submitting to a node
 
 Submit commands directly when you want the node to derive the next sequence number and previous hash from the current chain tip:

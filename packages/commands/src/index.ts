@@ -83,6 +83,34 @@ export class CommandSubmissionError extends Error {
   }
 }
 
+export type CommandPolicyViolationCode =
+  | 'resource_type_mismatch'
+  | 'resource_id_required'
+  | 'resource_id_mismatch'
+  | 'missing_payload_object'
+  | 'payload_id_required'
+  | 'unsupported_action';
+
+export interface CommandPolicyViolation {
+  code: CommandPolicyViolationCode;
+  path: string;
+  message: string;
+}
+
+export type CommandPolicyResult =
+  | { ok: true }
+  | { ok: false; errors: CommandPolicyViolation[] };
+
+export class CommandPolicyError extends Error {
+  readonly errors: CommandPolicyViolation[];
+
+  constructor(errors: CommandPolicyViolation[]) {
+    super(`Sphere command failed policy validation: ${errors.map((error) => error.message).join('; ')}`);
+    this.name = 'CommandPolicyError';
+    this.errors = errors;
+  }
+}
+
 export function createEntityCreateCommand(options: EntityCreateCommandOptions): Command {
   return createCommand({
     ...options,
@@ -124,6 +152,8 @@ export function createEdgeCreateCommand(options: EdgeCreateCommandOptions): Comm
 }
 
 export function createCommandEvent(options: CreateCommandEventOptions): Event {
+  assertCommandPolicy(options.command);
+
   const eventWithoutHash: EventWithoutHash = {
     id: nextId(options.createId),
     chainId: options.chainId,
@@ -149,6 +179,60 @@ export function createCommandEvent(options: CreateCommandEventOptions): Event {
     options.previousEvent,
     eventWithoutHash as unknown as Record<string, unknown>,
   ) as unknown as Event;
+}
+
+export function validateCommandPolicy(command: Command): CommandPolicyResult {
+  const errors: CommandPolicyViolation[] = [];
+
+  switch (command.action) {
+    case 'entity.create':
+      requireResourceType(command, 'entity', errors);
+      requirePayloadResourceId(command, 'entity', errors);
+      break;
+    case 'entity.update':
+      requireResourceType(command, 'entity', errors);
+      requireResourceId(command, errors);
+      requirePayloadObject(command, 'entity', errors);
+      break;
+    case 'entity.delete':
+      requireResourceType(command, 'entity', errors);
+      requireResourceId(command, errors);
+      break;
+    case 'identity.link':
+      requireResourceType(command, 'identity_link', errors);
+      requirePayloadResourceId(command, 'identityLink', errors);
+      break;
+    case 'identity.unlink':
+      requireResourceType(command, 'identity_link', errors);
+      requireResourceId(command, errors);
+      break;
+    case 'edge.create':
+      requireResourceType(command, 'edge', errors);
+      requirePayloadResourceId(command, 'edge', errors);
+      break;
+    case 'edge.delete':
+      requireResourceType(command, 'edge', errors);
+      requireResourceId(command, errors);
+      break;
+    default:
+      if (!command.action.startsWith('custom:')) {
+        errors.push({
+          code: 'unsupported_action',
+          path: '/action',
+          message: `Unsupported core command action ${command.action}`,
+        });
+      }
+      break;
+  }
+
+  return errors.length === 0 ? { ok: true } : { ok: false, errors };
+}
+
+export function assertCommandPolicy(command: Command): void {
+  const result = validateCommandPolicy(command);
+  if (!result.ok) {
+    throw new CommandPolicyError(result.errors);
+  }
 }
 
 export function createCommandSubmissionClient(options: CommandSubmissionClientOptions): CommandSubmissionClient {
@@ -203,6 +287,68 @@ function createCommand(options: CreateCommandOptions): Command {
     createdAt: timestamp(options.now),
     schemaVersion: SPHERE_SCHEMA_VERSION,
   };
+}
+
+function requireResourceType(command: Command, expected: Command['resourceType'], errors: CommandPolicyViolation[]): void {
+  if (command.resourceType !== expected) {
+    errors.push({
+      code: 'resource_type_mismatch',
+      path: '/resourceType',
+      message: `${command.action} commands must use resourceType ${expected}`,
+    });
+  }
+}
+
+function requireResourceId(command: Command, errors: CommandPolicyViolation[]): void {
+  if (typeof command.resourceId !== 'string' || command.resourceId.length === 0) {
+    errors.push({
+      code: 'resource_id_required',
+      path: '/resourceId',
+      message: `${command.action} commands must include a non-empty resourceId`,
+    });
+  }
+}
+
+function requirePayloadResourceId(command: Command, payloadKey: string, errors: CommandPolicyViolation[]): void {
+  const payloadObject = requirePayloadObject(command, payloadKey, errors);
+  if (payloadObject === undefined) {
+    return;
+  }
+
+  const payloadId = payloadObject.id;
+  if (typeof payloadId !== 'string' || payloadId.length === 0) {
+    errors.push({
+      code: 'payload_id_required',
+      path: `/payload/${payloadKey}/id`,
+      message: `${command.action} commands must include payload.${payloadKey}.id`,
+    });
+    return;
+  }
+
+  if (command.resourceId !== payloadId) {
+    errors.push({
+      code: 'resource_id_mismatch',
+      path: '/resourceId',
+      message: `${command.action} resourceId must match payload.${payloadKey}.id`,
+    });
+  }
+}
+
+function requirePayloadObject(
+  command: Command,
+  payloadKey: string,
+  errors: CommandPolicyViolation[],
+): Record<string, unknown> | undefined {
+  const payloadValue = command.payload[payloadKey];
+  if (payloadValue === null || typeof payloadValue !== 'object' || Array.isArray(payloadValue)) {
+    errors.push({
+      code: 'missing_payload_object',
+      path: `/payload/${payloadKey}`,
+      message: `${command.action} commands must include payload.${payloadKey} object`,
+    });
+    return undefined;
+  }
+  return payloadValue as Record<string, unknown>;
 }
 
 function inferSubjectId(command: Command): string | null {

@@ -107,12 +107,12 @@ Success response shape:
 }
 ```
 
-Invalid command bodies return `400` with `invalid_command_body`. Event-store append failures, such as stale chain-tip races, return `400` with `event_store_append_failed` plus the store error code/message.
+Invalid command bodies return `400` with `invalid_command_body`. Schema-valid commands that fail the built-in command policy return `400` with `command_policy_failed` and a list of policy errors. Event-store append failures, such as stale chain-tip races, return `400` with `event_store_append_failed` plus the store error code/message.
 
 ## Current behavior
 
 - Appends verified event-chain batches.
-- Accepts typed command records and converts them into the next chain event.
+- Accepts typed command records, validates built-in command policy, and converts them into the next chain event.
 - Rejects invalid command bodies and invalid/tampered/non-contiguous event batches without mutating stored events.
 - Returns stored events by chain id.
 - Projects stored events into graph state for entity, edge, identity, and diagnostic queries.

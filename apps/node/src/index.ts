@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
-import { createCommandEvent, type IdFactory } from '@sphere/commands';
+import { createCommandEvent, validateCommandPolicy, type IdFactory } from '@sphere/commands';
 import {
   createInMemoryEventStore,
   EventStoreAppendError,
@@ -87,6 +87,14 @@ export function buildNodeApp(options: NodeAppOptions = {}): FastifyInstance {
     const command = normalizeCommandBody(request.body);
     if (command === undefined) {
       return reply.code(400).send({ error: 'invalid_command_body' });
+    }
+
+    const commandPolicy = validateCommandPolicy(command);
+    if (!commandPolicy.ok) {
+      return reply.code(400).send({
+        error: 'command_policy_failed',
+        errors: commandPolicy.errors,
+      });
     }
 
     const latest = eventStore.getLatestEvent(request.params.chainId);
