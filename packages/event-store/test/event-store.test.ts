@@ -11,6 +11,7 @@ import {
   createInMemoryEventStore,
   createSqliteEventStore,
   EventStoreAppendError,
+  getEventStoreMetadata,
   type CloseableEventStore,
   type EventStore,
 } from '../src/index.js';
@@ -21,16 +22,19 @@ const entityId = '019e42ae-9c00-7000-8000-000000000004';
 
 interface StoreCase {
   name: string;
+  expectedStorage: 'memory' | 'sqlite';
   createStore(): { store: EventStore; cleanup(): void };
 }
 
 const storeCases: StoreCase[] = [
   {
     name: 'in-memory',
+    expectedStorage: 'memory',
     createStore: () => ({ store: createInMemoryEventStore(), cleanup: () => undefined }),
   },
   {
     name: 'SQLite',
+    expectedStorage: 'sqlite',
     createStore: () => {
       const store = createSqliteEventStore({ databasePath: ':memory:' });
       return { store, cleanup: () => store.close() };
@@ -90,6 +94,26 @@ function withStore(testCase: StoreCase, run: (store: EventStore) => void): void 
 describe('@sphere/event-store conformance', () => {
   for (const testCase of storeCases) {
     describe(testCase.name, () => {
+      it('reports implementation metadata and empty-store defaults', () => withStore(testCase, (store) => {
+        expect(getEventStoreMetadata(store)).toEqual({ storage: testCase.expectedStorage });
+        expect(store.getEvents('missing-chain')).toEqual([]);
+        expect(store.getEventsAfter('missing-chain', 0)).toEqual([]);
+        expect(store.getEventsRange('missing-chain', { afterSequence: 10, limit: 2 })).toEqual([]);
+        expect(store.getLatestEvent('missing-chain')).toBeUndefined();
+      }));
+
+      it('treats empty append batches as no-ops', () => withStore(testCase, (store) => {
+        const chain = threeEventChain();
+
+        store.append([]);
+        expect(store.getEvents(chain[0]!.chainId)).toEqual([]);
+
+        store.append(chain);
+        store.append([]);
+        expect(store.getEvents(chain[0]!.chainId)).toEqual(chain);
+        expect(store.getLatestEvent(chain[0]!.chainId)).toEqual(chain[2]);
+      }));
+
       it('appends and reads verified events by chain id', () => withStore(testCase, (store) => {
         const chain = validChain(
           eventWithoutHash({ sequence: 1 }),
@@ -135,7 +159,29 @@ describe('@sphere/event-store conformance', () => {
 
         store.append([first!, second!]);
         expect(() => store.append(otherChainDuplicate)).toThrow(/duplicate event id/);
+        expect(store.getEvents(first!.chainId)).toEqual([first, second]);
         expect(store.getEvents(otherChainDuplicate[0]!.chainId)).toEqual([]);
+      }));
+
+      it('rejects mixed-chain batches without mutating either chain', () => withStore(testCase, (store) => {
+        const [first, second] = validChain(
+          eventWithoutHash({ sequence: 1 }),
+          eventWithoutHash({ id: '019e42ae-9c00-7000-8000-000000000005', sequence: 2 }),
+        );
+        const otherChainEvent = validChain(eventWithoutHash({
+          id: '019e42ae-9c00-7000-8000-000000000105',
+          chainId: '019e42ae-9c00-7000-8000-000000000199',
+          sequence: 1,
+        }))[0]!;
+
+        expect(() => store.append([first!, otherChainEvent])).toThrow(/multiple chains/);
+        expect(store.getEvents(first!.chainId)).toEqual([]);
+        expect(store.getEvents(otherChainEvent.chainId)).toEqual([]);
+
+        store.append([first!]);
+        expect(() => store.append([second!, otherChainEvent])).toThrow(/multiple chains/);
+        expect(store.getEvents(first!.chainId)).toEqual([first]);
+        expect(store.getEvents(otherChainEvent.chainId)).toEqual([]);
       }));
 
       it('requires appended batches to continue the stored chain tip', () => withStore(testCase, (store) => {
@@ -178,6 +224,7 @@ describe('@sphere/event-store conformance', () => {
         expect(store.getEventsRange(chain[0]!.chainId, { afterSequence: 1, limit: 1 })).toEqual([chain[1]]);
         expect(store.getEventsRange(chain[0]!.chainId, { afterSequence: 2 })).toEqual([chain[2]]);
         expect(store.getEventsRange(chain[0]!.chainId, { limit: 2 })).toEqual([chain[0], chain[1]]);
+        expect(store.getEventsRange(chain[0]!.chainId, { afterSequence: 3, limit: 1 })).toEqual([]);
       }));
 
       it('rejects invalid range options', () => withStore(testCase, (store) => {
