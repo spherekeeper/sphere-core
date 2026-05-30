@@ -131,6 +131,122 @@ describe('Sphere node runtime', () => {
     }
   });
 
+  it('persists SQLite-backed command events across runtime restarts', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'sphere-node-sqlite-restart-'));
+    const databasePath = join(tempDir, 'events.sqlite');
+    const config = createNodeRuntimeConfig({
+      SPHERE_NODE_DB: databasePath,
+      SPHERE_NODE_HOST: '127.0.0.1',
+      SPHERE_NODE_PORT: '0',
+    });
+    const chainId = '019e42ae-9c00-7000-8000-000000000600';
+    const actorId = '019e42ae-9c00-7000-8000-000000000601';
+    const firstEntityId = '019e42ae-9c00-7000-8000-000000000602';
+    const secondEntityId = '019e42ae-9c00-7000-8000-000000000603';
+    const logger = { info: vi.fn(), error: vi.fn() };
+    const firstCommand = createEntityCreateCommand({
+      actorId,
+      now: new Date('2026-05-29T00:00:00.000Z'),
+      createId: () => '019e42ae-9c00-7000-8000-000000000604',
+      entity: {
+        id: firstEntityId,
+        kind: 'group',
+        name: 'Persisted First Entity',
+        metadata: { source: 'before-restart' },
+        createdAt: '2026-05-29T00:00:00.000Z',
+        updatedAt: '2026-05-29T00:00:00.000Z',
+        schemaVersion: '0.1.0',
+      },
+    });
+    const secondCommand = createEntityCreateCommand({
+      actorId,
+      now: new Date('2026-05-29T00:01:00.000Z'),
+      createId: () => '019e42ae-9c00-7000-8000-000000000605',
+      entity: {
+        id: secondEntityId,
+        kind: 'group',
+        name: 'Persisted Second Entity',
+        metadata: { source: 'after-restart' },
+        createdAt: '2026-05-29T00:01:00.000Z',
+        updatedAt: '2026-05-29T00:01:00.000Z',
+        schemaVersion: '0.1.0',
+      },
+    });
+
+    try {
+      const firstRuntime = createNodeRuntime({ config, logger });
+      let firstResult: Awaited<ReturnType<ReturnType<typeof createCommandSubmissionClient>['submitCommand']>>;
+      try {
+        const firstAddress = await firstRuntime.start();
+        const firstClient = createCommandSubmissionClient({ baseUrl: firstAddress });
+        firstResult = await firstClient.submitCommand({ chainId, command: firstCommand });
+        expect(firstResult).toMatchObject({ accepted: true, chainId, event: { sequence: 1, previousHash: null } });
+      } finally {
+        await firstRuntime.stop();
+      }
+
+      const secondRuntime = createNodeRuntime({ config, logger });
+      try {
+        const secondAddress = await secondRuntime.start();
+        const secondClient = createCommandSubmissionClient({ baseUrl: secondAddress });
+        const persistedEventsResponse = await fetch(`${secondAddress}/chains/${chainId}/events`);
+        const rangedEventsResponse = await fetch(`${secondAddress}/chains/${chainId}/events?afterSequence=0&limit=1`);
+        const persistedEntityResponse = await fetch(`${secondAddress}/chains/${chainId}/graph/entities/${firstEntityId}`);
+        const secondResult = await secondClient.submitCommand({ chainId, command: secondCommand });
+        const allEventsResponse = await fetch(`${secondAddress}/chains/${chainId}/events`);
+
+        expect(persistedEventsResponse.ok).toBe(true);
+        await expect(persistedEventsResponse.json()).resolves.toMatchObject({
+          chainId,
+          events: [{ sequence: 1, hash: firstResult.event.hash }],
+        });
+
+        expect(rangedEventsResponse.ok).toBe(true);
+        await expect(rangedEventsResponse.json()).resolves.toMatchObject({
+          chainId,
+          events: [{ sequence: 1, hash: firstResult.event.hash }],
+          pageInfo: {
+            afterSequence: 0,
+            limit: 1,
+            returned: 1,
+            nextAfterSequence: 1,
+          },
+        });
+
+        expect(persistedEntityResponse.ok).toBe(true);
+        await expect(persistedEntityResponse.json()).resolves.toMatchObject({
+          id: firstEntityId,
+          name: 'Persisted First Entity',
+          metadata: { source: 'before-restart' },
+        });
+
+        expect(secondResult).toMatchObject({
+          accepted: true,
+          chainId,
+          event: {
+            sequence: 2,
+            previousHash: firstResult.event.hash,
+            action: 'entity.create',
+            payload: { command: secondCommand },
+          },
+        });
+
+        expect(allEventsResponse.ok).toBe(true);
+        await expect(allEventsResponse.json()).resolves.toMatchObject({
+          chainId,
+          events: [
+            { sequence: 1, hash: firstResult.event.hash },
+            { sequence: 2, hash: secondResult.event.hash },
+          ],
+        });
+      } finally {
+        await secondRuntime.stop();
+      }
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('registers SIGINT/SIGTERM shutdown handlers that stop the runtime', async () => {
     const process = new FakeProcess();
     const runtime = { stop: vi.fn(async () => undefined) };
