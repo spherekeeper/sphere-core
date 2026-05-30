@@ -44,6 +44,18 @@ export interface GraphProjection {
   lastReplayedEvent?: Event;
 }
 
+export interface GraphProjectionSnapshot {
+  entities: Entity[];
+  entityTombstones: EntityTombstone[];
+  edges: Edge[];
+  identityLinks: IdentityLink[];
+  diagnostics: GraphProjectionDiagnostic[];
+  appliedEventIds: string[];
+  skippedEventIds: string[];
+  lastAppliedEventId: string | null;
+  lastReplayedEventId: string | null;
+}
+
 export function createGraphProjection(): GraphProjection {
   return {
     entities: new Map(),
@@ -229,6 +241,30 @@ export function getIdentityLinkByPlatform(
 ): IdentityLink | undefined {
   const id = graph.identityLinksByPlatform.get(identityPlatformKey(platform, platformId));
   return id === undefined ? undefined : graph.identityLinks.get(id);
+}
+
+export function snapshotGraphProjection(graph: GraphProjection): GraphProjectionSnapshot {
+  return {
+    entities: sortedJsonValues(graph.entities),
+    entityTombstones: sortedJsonValues(graph.entityTombstones),
+    edges: sortedJsonValues(graph.edges),
+    identityLinks: sortedJsonValues(graph.identityLinks),
+    diagnostics: graph.diagnostics.map((diagnostic) => cloneJson(diagnostic)),
+    appliedEventIds: [...graph.appliedEventIds],
+    skippedEventIds: [...graph.skippedEventIds],
+    lastAppliedEventId: graph.lastAppliedEvent?.id ?? null,
+    lastReplayedEventId: graph.lastReplayedEvent?.id ?? null,
+  };
+}
+
+function sortedJsonValues<T extends { id: string }>(values: Map<string, T>): T[] {
+  return [...values.values()]
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((value) => cloneJson(value));
+}
+
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 function entityFromCreateEvent(event: Event): Entity {

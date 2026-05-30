@@ -23,6 +23,7 @@ The current projection supports:
 - `getIdentityLinksForEntity(entityId)`
 - `getIdentityLinkByPlatform(platform, platformId)`
 - `getProjectionDiagnostics(graph)`
+- `snapshotGraphProjection(graph)` for deterministic JSON fixture/conformance snapshots
 
 Deletion semantics:
 
@@ -38,3 +39,9 @@ Diagnostics semantics:
 - Missing update/delete targets are recorded as `warning` diagnostics.
 - Missing identity unlink targets are recorded as `warning` diagnostics.
 - Diagnostics include event id, action, code, message, and resource id when applicable.
+
+Fixture/conformance semantics:
+
+- `snapshotGraphProjection(graph)` converts internal `Map`/`Set` projection state into plain JSON.
+- Entity, tombstone, edge, and identity arrays are sorted by `id` for stable fixtures.
+- Event cursors are exposed as `lastAppliedEventId` and `lastReplayedEventId` so fixture checks can assert replay progress without embedding full event records.

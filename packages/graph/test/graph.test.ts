@@ -19,6 +19,7 @@ import {
   getIdentityLink,
   getIdentityLinksForEntity,
   getIdentityLinkByPlatform,
+  snapshotGraphProjection,
 } from '../src/index.js';
 
 const repoRoot = join(__dirname, '../../..');
@@ -468,6 +469,62 @@ describe('@sphere/graph', () => {
     expect(graph.skippedEventIds).toEqual([chain[0]!.id]);
     expect(graph.lastReplayedEvent).toEqual(chain[1]);
     expect(getEntity(graph, entityId)?.name).toBe('After Skip');
+  });
+
+  it('creates deterministic JSON projection snapshots for fixtures and conformance checks', () => {
+    const highEntityId = '019e42ae-9c00-7000-8000-000000000099';
+    const lowEntityId = '019e42ae-9c00-7000-8000-000000000003';
+    const chain = validChain(
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000701',
+        sequence: 1,
+        action: 'entity.create',
+        resourceId: highEntityId,
+        payload: { entity: { id: highEntityId, kind: 'group', name: 'High', metadata: {} } },
+      }),
+      eventWithoutHash({
+        id: '019e42ae-9c00-7000-8000-000000000702',
+        sequence: 2,
+        action: 'entity.create',
+        resourceId: lowEntityId,
+        payload: { entity: { id: lowEntityId, kind: 'person', name: 'Low', metadata: {} } },
+      }),
+    );
+    const graph = replayEvents(chain);
+
+    const snapshot = snapshotGraphProjection(graph);
+
+    expect(JSON.parse(JSON.stringify(snapshot))).toEqual(snapshot);
+    expect(snapshot).toEqual({
+      entities: [
+        {
+          id: lowEntityId,
+          kind: 'person',
+          name: 'Low',
+          metadata: {},
+          createdAt: '2026-05-20T00:00:00.000Z',
+          updatedAt: '2026-05-20T00:00:00.000Z',
+          schemaVersion: '0.1.0',
+        },
+        {
+          id: highEntityId,
+          kind: 'group',
+          name: 'High',
+          metadata: {},
+          createdAt: '2026-05-20T00:00:00.000Z',
+          updatedAt: '2026-05-20T00:00:00.000Z',
+          schemaVersion: '0.1.0',
+        },
+      ],
+      entityTombstones: [],
+      edges: [],
+      identityLinks: [],
+      diagnostics: [],
+      appliedEventIds: chain.map((event) => event.id),
+      skippedEventIds: [],
+      lastAppliedEventId: chain[1]!.id,
+      lastReplayedEventId: chain[1]!.id,
+    });
   });
 
   it('records diagnostics and skips projection for malformed action payloads', () => {
