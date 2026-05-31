@@ -78,8 +78,8 @@ The first kernel is implemented and test-covered:
 - event hash-chain verification;
 - replayable in-memory graph projection;
 - in-memory and SQLite event stores;
-- command-to-event helpers and node submission client;
-- minimal reference node API with memory/SQLite storage reporting and command acceptance;
+- command-to-event helpers plus reference-node submission/read clients;
+- minimal reference node API with memory/SQLite storage reporting, ranged event reads, and command acceptance;
 - runnable reference node service entrypoint with graceful shutdown.
 
-The next major runtime step is adding a small CLI/demo flow that creates commands and submits them to a running node.
+Near-term focus remains on tightening client ergonomics, auth/error boundaries, and core test/docs coverage before app-specific product work.

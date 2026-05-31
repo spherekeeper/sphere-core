@@ -1,8 +1,8 @@
 # @sphere/commands
 
-Command-to-event helpers and node submission utilities for Sphere.
+Command-to-event helpers plus reference-node client utilities for Sphere.
 
-This package is the first ergonomic layer above raw events. It builds typed `Command` records for common graph mutations, converts those commands into hash-linked events, and submits commands or event batches to a Sphere reference node.
+This package is the first ergonomic layer above raw events. It builds typed `Command` records for common graph mutations, converts those commands into hash-linked events, submits commands or event batches to a Sphere reference node, and reads back health/runtime/event/graph responses from the current HTTP API.
 
 ## Supported command helpers
 
@@ -88,7 +88,37 @@ You can also submit already-built event batches:
 await client.submitEvents({ chainId, events: [event] });
 ```
 
-Non-2xx node responses throw `CommandSubmissionError` with `status` and parsed `details`.
+## Reading from a node
+
+Use `createNodeReadClient` when a client wants typed wrappers around the current reference-node read endpoints:
+
+```ts
+import { createNodeReadClient } from '@sphere/commands';
+
+const readClient = createNodeReadClient({
+  baseUrl: 'http://127.0.0.1:3080',
+  // Optional: include this when the node is started with SPHERE_NODE_BEARER_TOKEN.
+  bearerToken: 'your-secret',
+});
+
+const info = await readClient.getNodeInfo();
+const entities = await readClient.listEntities({ chainId });
+const events = await readClient.getEvents({ chainId, afterSequence: 10, limit: 100 });
+```
+
+Current read helpers cover:
+
+- `getHealth()`
+- `getNodeInfo()`
+- `getEvents({ chainId, afterSequence?, limit? })`
+- `listEntities({ chainId })`
+- `getEntity({ chainId, entityId })`
+- `getEdgesFrom({ chainId, entityId })`
+- `getEdgesTo({ chainId, entityId })`
+- `getIdentityLink({ chainId, platform, platformId })`
+- `getDiagnostics({ chainId })`
+
+Non-2xx responses also throw `CommandSubmissionError` with `status` and parsed `details` so callers can inspect route-level error bodies.
 
 ## Node command endpoint
 

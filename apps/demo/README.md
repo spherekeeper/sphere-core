@@ -9,6 +9,8 @@ The demo flow intentionally stays small:
 3. read back `GET /chains/:chainId/graph/entities`;
 4. print the submitted event summary and current projected entities as JSON.
 
+Internally the demo now uses the shared `@sphere/commands` client helpers for both command submission and graph/entity readback, so it doubles as a smoke test for the programmatic client surface.
+
 It is meant to smoke-test client/runtime wiring after starting a local node. It is not a production CLI.
 
 ## Run the node

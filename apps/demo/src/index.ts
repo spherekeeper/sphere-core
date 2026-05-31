@@ -1,7 +1,7 @@
 import {
-  CommandSubmissionError,
   createCommandSubmissionClient,
   createEntityCreateCommand,
+  createNodeReadClient,
   type IdFactory,
 } from '@sphere/commands';
 import { SPHERE_SCHEMA_VERSION, type Entity, type Event, type JsonObject } from '@sphere/types';
@@ -23,11 +23,6 @@ export interface DemoFlowOptions {
 export interface DemoFlowResult {
   chainId: string;
   submittedEvent: Event;
-  entities: Entity[];
-}
-
-interface GraphEntitiesResponse {
-  chainId: string;
   entities: Entity[];
 }
 
@@ -55,50 +50,18 @@ export async function runDemoFlow(options: DemoFlowOptions): Promise<DemoFlowRes
     fetch: fetchImpl,
     ...(options.bearerToken === undefined ? {} : { bearerToken: options.bearerToken }),
   });
-
-  const submitted = await client.submitCommand({ chainId: options.chainId, command });
-  const graph = await fetchGraphEntities({
+  const readClient = createNodeReadClient({
     baseUrl: options.baseUrl,
-    chainId: options.chainId,
     fetch: fetchImpl,
     ...(options.bearerToken === undefined ? {} : { bearerToken: options.bearerToken }),
   });
+
+  const submitted = await client.submitCommand({ chainId: options.chainId, command });
+  const graph = await readClient.listEntities({ chainId: options.chainId });
 
   return {
     chainId: options.chainId,
     submittedEvent: submitted.event,
     entities: graph.entities,
   };
-}
-
-async function fetchGraphEntities(options: {
-  baseUrl: string;
-  chainId: string;
-  bearerToken?: string;
-  fetch: typeof fetch;
-}): Promise<GraphEntitiesResponse> {
-  const response = await options.fetch(
-    `${options.baseUrl.replace(/\/+$/, '')}/chains/${encodeURIComponent(options.chainId)}/graph/entities`,
-    {
-      method: 'GET',
-      headers: options.bearerToken === undefined ? {} : { authorization: `Bearer ${options.bearerToken}` },
-    },
-  );
-  const body = await parseResponseBody(response);
-  if (!response.ok) {
-    throw new CommandSubmissionError(response.status, body);
-  }
-  return body as GraphEntitiesResponse;
-}
-
-async function parseResponseBody(response: Response): Promise<unknown> {
-  const text = await response.text();
-  if (text.length === 0) {
-    return null;
-  }
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return text;
-  }
 }

@@ -71,12 +71,99 @@ export interface CommandSubmissionClient {
   submitCommand(options: SubmitCommandOptions): Promise<SubmitCommandResponse>;
 }
 
+export interface NodeReadClientOptions {
+  baseUrl: string;
+  bearerToken?: string;
+  fetch?: typeof fetch;
+}
+
+export interface GetEventsOptions {
+  chainId: string;
+  afterSequence?: number;
+  limit?: number;
+}
+
+export interface ChainEntitiesResponse {
+  chainId: string;
+  entities: Entity[];
+}
+
+export interface ChainEdgesResponse {
+  chainId: string;
+  edges: Edge[];
+}
+
+export interface EventPageInfo {
+  afterSequence: number | null;
+  limit: number | null;
+  returned: number;
+  nextAfterSequence: number | null;
+}
+
+export interface EventRangeResponse {
+  chainId: string;
+  events: Event[];
+  pageInfo?: EventPageInfo;
+}
+
+export interface NodeInfoResponse {
+  name: string;
+  schemaVersion: string;
+  storage: 'memory' | 'sqlite' | string;
+}
+
+export interface HealthResponse {
+  ok: boolean;
+}
+
+export interface GetEntityOptions {
+  chainId: string;
+  entityId: string;
+}
+
+export interface GetEdgesOptions {
+  chainId: string;
+  entityId: string;
+}
+
+export interface GetIdentityLinkOptions {
+  chainId: string;
+  platform: string;
+  platformId: string;
+}
+
+export interface ProjectionDiagnostic {
+  code: string;
+  severity: 'info' | 'warning' | 'error';
+  eventId: string;
+  action: Event['action'];
+  message: string;
+  resourceId?: string | null;
+}
+
+export interface ChainDiagnosticsResponse {
+  chainId: string;
+  diagnostics: ProjectionDiagnostic[];
+}
+
+export interface NodeReadClient {
+  getHealth(): Promise<HealthResponse>;
+  getNodeInfo(): Promise<NodeInfoResponse>;
+  getEvents(options: GetEventsOptions): Promise<EventRangeResponse>;
+  listEntities(options: { chainId: string }): Promise<ChainEntitiesResponse>;
+  getEntity(options: GetEntityOptions): Promise<Entity>;
+  getEdgesFrom(options: GetEdgesOptions): Promise<ChainEdgesResponse>;
+  getEdgesTo(options: GetEdgesOptions): Promise<ChainEdgesResponse>;
+  getIdentityLink(options: GetIdentityLinkOptions): Promise<IdentityLink>;
+  getDiagnostics(options: { chainId: string }): Promise<ChainDiagnosticsResponse>;
+}
+
 export class CommandSubmissionError extends Error {
   readonly status: number;
   readonly details: unknown;
 
   constructor(status: number, details: unknown) {
-    super(`Sphere node command submission failed with status ${status}`);
+    super(`Sphere node request failed with status ${status}`);
     this.name = 'CommandSubmissionError';
     this.status = status;
     this.details = details;
@@ -268,6 +355,72 @@ export function createCommandSubmissionClient(options: CommandSubmissionClientOp
   };
 }
 
+export function createNodeReadClient(options: NodeReadClientOptions): NodeReadClient {
+  const baseUrl = options.baseUrl.replace(/\/+$/, '');
+  const fetchImpl = options.fetch ?? fetch;
+  const publicHeaders = createRequestHeaders();
+  const chainHeaders = createRequestHeaders(options.bearerToken);
+
+  return {
+    async getHealth(): Promise<HealthResponse> {
+      return requestJson<HealthResponse>(fetchImpl, `${baseUrl}/health`, { method: 'GET', headers: publicHeaders });
+    },
+    async getNodeInfo(): Promise<NodeInfoResponse> {
+      return requestJson<NodeInfoResponse>(fetchImpl, `${baseUrl}/node/info`, { method: 'GET', headers: publicHeaders });
+    },
+    async getEvents(getOptions: GetEventsOptions): Promise<EventRangeResponse> {
+      const query = createEventRangeQuery(getOptions);
+      return requestJson<EventRangeResponse>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/events${query}`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+    async listEntities(getOptions: { chainId: string }): Promise<ChainEntitiesResponse> {
+      return requestJson<ChainEntitiesResponse>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/graph/entities`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+    async getEntity(getOptions: GetEntityOptions): Promise<Entity> {
+      return requestJson<Entity>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/graph/entities/${encodeURIComponent(getOptions.entityId)}`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+    async getEdgesFrom(getOptions: GetEdgesOptions): Promise<ChainEdgesResponse> {
+      return requestJson<ChainEdgesResponse>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/graph/edges/from/${encodeURIComponent(getOptions.entityId)}`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+    async getEdgesTo(getOptions: GetEdgesOptions): Promise<ChainEdgesResponse> {
+      return requestJson<ChainEdgesResponse>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/graph/edges/to/${encodeURIComponent(getOptions.entityId)}`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+    async getIdentityLink(getOptions: GetIdentityLinkOptions): Promise<IdentityLink> {
+      return requestJson<IdentityLink>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/graph/identity/${encodeURIComponent(getOptions.platform)}/${encodeURIComponent(getOptions.platformId)}`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+    async getDiagnostics(getOptions: { chainId: string }): Promise<ChainDiagnosticsResponse> {
+      return requestJson<ChainDiagnosticsResponse>(
+        fetchImpl,
+        `${baseUrl}/chains/${encodeURIComponent(getOptions.chainId)}/graph/diagnostics`,
+        { method: 'GET', headers: chainHeaders },
+      );
+    },
+  };
+}
+
 interface CreateCommandOptions extends CommandFactoryOptions {
   action: Command['action'];
   resourceType: Command['resourceType'];
@@ -373,10 +526,37 @@ function timestamp(now: Date | undefined): string {
   return (now ?? new Date()).toISOString();
 }
 
+function createRequestHeaders(bearerToken?: string): Record<string, string> {
+  return bearerToken === undefined ? {} : { authorization: `Bearer ${bearerToken}` };
+}
+
 function createJsonHeaders(bearerToken: string | undefined): Record<string, string> {
-  return bearerToken === undefined
-    ? { 'content-type': 'application/json' }
-    : { 'authorization': `Bearer ${bearerToken}`, 'content-type': 'application/json' };
+  return { ...createRequestHeaders(bearerToken), 'content-type': 'application/json' };
+}
+
+function createEventRangeQuery(options: GetEventsOptions): string {
+  const params = new URLSearchParams();
+  if (options.afterSequence !== undefined) {
+    params.set('afterSequence', String(options.afterSequence));
+  }
+  if (options.limit !== undefined) {
+    params.set('limit', String(options.limit));
+  }
+  const query = params.toString();
+  return query.length === 0 ? '' : `?${query}`;
+}
+
+async function requestJson<T>(
+  fetchImpl: typeof fetch,
+  url: string,
+  init: { method: 'GET'; headers: Record<string, string> },
+): Promise<T> {
+  const response = await fetchImpl(url, init);
+  const details = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new CommandSubmissionError(response.status, details);
+  }
+  return details as T;
 }
 
 async function parseResponseBody(response: Response): Promise<unknown> {

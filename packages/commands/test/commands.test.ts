@@ -6,6 +6,7 @@ import type { Edge, Entity, Event, IdentityLink } from '@sphere/types';
 import {
   createCommandEvent,
   createCommandSubmissionClient,
+  createNodeReadClient,
   createEntityCreateCommand,
   createEntityUpdateCommand,
   createIdentityLinkCommand,
@@ -245,6 +246,105 @@ describe('@sphere/commands', () => {
       name: 'CommandSubmissionError',
       status: 400,
       details: { error: 'invalid_command_body' },
+    });
+  });
+
+  it('reads node metadata and ranged events from a Sphere node', async () => {
+    const firstCommand = createEntityCreateCommand({ actorId, entity: entity(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000221') });
+    const firstEvent = createCommandEvent({ command: firstCommand, chainId, sequence: 1, now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000321') });
+    const fetch = vi.fn(async (input: string | URL | Request) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === 'http://127.0.0.1:3080/health') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === 'http://127.0.0.1:3080/node/info') {
+        return new Response(JSON.stringify({ name: 'sphere-reference-node', schemaVersion: '0.1.0', storage: 'sqlite' }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://127.0.0.1:3080/chains/${chainId}/events?afterSequence=0&limit=1`) {
+        return new Response(JSON.stringify({
+          chainId,
+          events: [firstEvent],
+          pageInfo: { afterSequence: 0, limit: 1, returned: 1, nextAfterSequence: 1 },
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+    const client = createNodeReadClient({ baseUrl: 'http://127.0.0.1:3080/', bearerToken: 'dev-secret', fetch: fetch as typeof fetch });
+
+    await expect(client.getHealth()).resolves.toEqual({ ok: true });
+    await expect(client.getNodeInfo()).resolves.toEqual({
+      name: 'sphere-reference-node',
+      schemaVersion: '0.1.0',
+      storage: 'sqlite',
+    });
+    await expect(client.getEvents({ chainId, afterSequence: 0, limit: 1 })).resolves.toEqual({
+      chainId,
+      events: [firstEvent],
+      pageInfo: { afterSequence: 0, limit: 1, returned: 1, nextAfterSequence: 1 },
+    });
+    expect(fetch).toHaveBeenNthCalledWith(1, 'http://127.0.0.1:3080/health', { method: 'GET', headers: {} });
+    expect(fetch).toHaveBeenNthCalledWith(2, 'http://127.0.0.1:3080/node/info', { method: 'GET', headers: {} });
+    expect(fetch).toHaveBeenNthCalledWith(3, `http://127.0.0.1:3080/chains/${chainId}/events?afterSequence=0&limit=1`, {
+      method: 'GET',
+      headers: { authorization: 'Bearer dev-secret' },
+    });
+  });
+
+  it('reads graph projection queries from a Sphere node', async () => {
+    const graphEntity = entity();
+    const graphEdge = edge();
+    const graphIdentityLink = identityLink();
+    const fetch = vi.fn(async (input: string | URL | Request) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === `http://node.local/chains/${chainId}/graph/entities`) {
+        return new Response(JSON.stringify({ chainId, entities: [graphEntity] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://node.local/chains/${chainId}/graph/entities/${entityId}`) {
+        return new Response(JSON.stringify(graphEntity), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://node.local/chains/${chainId}/graph/edges/from/${encodeURIComponent(actorId)}`) {
+        return new Response(JSON.stringify({ chainId, edges: [graphEdge] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://node.local/chains/${chainId}/graph/edges/to/${entityId}`) {
+        return new Response(JSON.stringify({ chainId, edges: [graphEdge] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://node.local/chains/${chainId}/graph/identity/${graphIdentityLink.platform}/${graphIdentityLink.platformId}`) {
+        return new Response(JSON.stringify(graphIdentityLink), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://node.local/chains/${chainId}/graph/diagnostics`) {
+        return new Response(JSON.stringify({ chainId, diagnostics: [{ code: 'unsupported_action', severity: 'info', eventId: 'event-1', action: 'custom:test', message: 'No projection handler for event action custom:test' }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
+    const client = createNodeReadClient({ baseUrl: 'http://node.local', fetch: fetch as typeof fetch });
+
+    await expect(client.listEntities({ chainId })).resolves.toEqual({ chainId, entities: [graphEntity] });
+    await expect(client.getEntity({ chainId, entityId })).resolves.toEqual(graphEntity);
+    await expect(client.getEdgesFrom({ chainId, entityId: actorId })).resolves.toEqual({ chainId, edges: [graphEdge] });
+    await expect(client.getEdgesTo({ chainId, entityId })).resolves.toEqual({ chainId, edges: [graphEdge] });
+    await expect(client.getIdentityLink({ chainId, platform: graphIdentityLink.platform, platformId: graphIdentityLink.platformId })).resolves.toEqual(graphIdentityLink);
+    await expect(client.getDiagnostics({ chainId })).resolves.toEqual({
+      chainId,
+      diagnostics: [
+        {
+          code: 'unsupported_action',
+          severity: 'info',
+          eventId: 'event-1',
+          action: 'custom:test',
+          message: 'No projection handler for event action custom:test',
+        },
+      ],
+    });
+  });
+
+  it('surfaces non-2xx read errors with response details', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'entity_not_found', id: entityId }), { status: 404, headers: { 'content-type': 'application/json' } }));
+    const client = createNodeReadClient({ baseUrl: 'http://node.local/', fetch });
+
+    await expect(client.getEntity({ chainId, entityId })).rejects.toMatchObject({
+      name: 'CommandSubmissionError',
+      status: 404,
+      details: { error: 'entity_not_found', id: entityId },
     });
   });
 });
