@@ -20,5 +20,6 @@
   "devDependencies": {
     "@sphere/node": "workspace:*",
     "tsx": "^4.22.3"
-  }
+  },
+  "license": "MIT"
 }

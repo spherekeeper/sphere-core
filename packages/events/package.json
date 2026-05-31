@@ -11,5 +11,6 @@
   },
   "dependencies": {
     "@sphere/types": "workspace:*"
-  }
+  },
+  "license": "MIT"
 }

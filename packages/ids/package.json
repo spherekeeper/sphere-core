@@ -8,5 +8,6 @@
   "scripts": {
     "test": "cd ../.. && vitest run packages/ids/test/ids.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
-  }
+  },
+  "license": "MIT"
 }

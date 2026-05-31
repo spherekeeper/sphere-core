@@ -70,6 +70,10 @@ pnpm typecheck
 - [Runtime Security Boundary](docs/runtime-security-boundary.md)
 - [Protocol Versioning](docs/protocol-versioning.md)
 
+## License
+
+This repository is licensed under the [MIT License](LICENSE).
+
 ## Status
 
 The first kernel is implemented and test-covered:

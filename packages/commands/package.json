@@ -13,5 +13,6 @@
     "@sphere/events": "workspace:*",
     "@sphere/ids": "workspace:*",
     "@sphere/types": "workspace:*"
-  }
+  },
+  "license": "MIT"
 }
