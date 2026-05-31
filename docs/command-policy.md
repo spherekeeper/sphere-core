@@ -193,6 +193,8 @@ For the first app candidate, keep the core/app split explicit:
 
 ## Testing expectations
 
+Related event payload and projection semantics are documented in [Events and Actions](./events-and-actions.md). The HTTP endpoint contract is documented in [Reference Node API](./api.md).
+
 When changing command policy or command submission:
 
 - update `packages/commands/test/commands.test.ts` for helper and policy behavior;

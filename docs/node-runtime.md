@@ -58,7 +58,7 @@ pnpm --filter @sphere/node start
 Run with the development bearer-token gate enabled:
 
 ```bash
-SPHERE_NODE_BEARER_TOKEN=dev-secret pnpm --filter @sphere/node start
+SPHERE_NODE_BEARER_TOKEN=TOKEN_VALUE pnpm --filter @sphere/node start
 ```
 
 Then include a matching `authorization` header on chain endpoints. The header value uses the HTTP bearer-token scheme with the token configured in `SPHERE_NODE_BEARER_TOKEN`.
@@ -112,6 +112,8 @@ With SQLite storage, restart means the new runtime instance reuses the same even
 This pattern is covered by the node runtime SQLite restart smoke test in `apps/node/test/runtime.test.ts`.
 
 ## API surface
+
+The full endpoint contract, including request/response shapes and the error catalog, lives in [Reference Node API](./api.md).
 
 Public runtime endpoints:
 
@@ -190,7 +192,7 @@ Response shape:
 
 Invalid command bodies return `400` with `invalid_command_body`. Commands that are schema-valid but fail built-in policy return `400` with `command_policy_failed` and policy errors. Append races or store verification failures return `400` with `event_store_append_failed`.
 
-See [Command Policy](./command-policy.md) for built-in and app-specific command boundaries.
+See [Command Policy](./command-policy.md) for built-in and app-specific command boundaries. See [Events and Actions](./events-and-actions.md) for event payload and projection semantics.
 
 ### Read events
 
@@ -251,6 +253,13 @@ curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/graph/
 ```
 
 Entity and identity single-resource lookups return `404` with `entity_not_found` or `identity_link_not_found` when no projected record exists.
+
+## Related docs
+
+- [Reference Node API](./api.md)
+- [Events and Actions](./events-and-actions.md)
+- [Command Policy](./command-policy.md)
+- [Runtime Security Boundary](./runtime-security-boundary.md)
 
 ## Operational notes
 

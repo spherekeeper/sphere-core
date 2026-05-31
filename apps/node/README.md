@@ -4,7 +4,7 @@ Minimal local reference node for Sphere core experiments.
 
 The node uses `@sphere/event-store` and replays each chain into an in-memory graph projection for queries. It defaults to memory storage, but can use SQLite persistence via `SPHERE_NODE_DB`.
 
-For the fuller runtime guide, including storage behavior, restart expectations, API examples, and operational notes, see [`docs/node-runtime.md`](../../docs/node-runtime.md). For the trusted-development security boundary, see [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md).
+For the fuller runtime guide, including storage behavior, restart expectations, API examples, and operational notes, see [`docs/node-runtime.md`](../../docs/node-runtime.md). For the full endpoint contract, see [`docs/api.md`](../../docs/api.md). For event/action semantics, see [`docs/events-and-actions.md`](../../docs/events-and-actions.md). For the trusted-development security boundary, see [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md).
 
 ## Development
 

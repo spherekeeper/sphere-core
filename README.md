@@ -56,6 +56,8 @@ pnpm typecheck
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Reference Node API](docs/api.md)
+- [Events and Actions](docs/events-and-actions.md)
 - [Node Runtime](docs/node-runtime.md)
 - [Testing](docs/testing.md)
 - [Command Policy](docs/command-policy.md)
