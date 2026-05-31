@@ -1,10 +1,26 @@
 {
   "name": "sphere-core",
   "version": "0.0.0",
+  "description": "Sphere core protocol schemas, TypeScript packages, and reference node.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "typescript",
+    "reference-node"
+  ],
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.9",
-  "description": "Sphere core protocol schemas, TypeScript packages, and reference node.",
   "scripts": {
     "build": "pnpm -r --if-present build",
     "test": "vitest run --passWithNoTests",

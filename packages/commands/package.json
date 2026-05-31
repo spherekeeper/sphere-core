@@ -1,6 +1,24 @@
 {
   "name": "@sphere/commands",
   "version": "0.0.0",
+  "description": "Command-to-event helpers plus reference-node client utilities for Sphere.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "packages/commands"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/packages/commands#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "commands",
+    "client"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

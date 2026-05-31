@@ -1,10 +1,10 @@
 # Apps
 
-Temporary home for reference apps while repo boundaries are fluid.
+Reference applications and developer-facing executables for the current Sphere core workspace.
 
-Planned apps:
+Current apps:
 
-- `node` — minimal local reference node.
-- `cli` — developer inspection and fixture validation CLI.
+- [`node`](node/README.md) — minimal local reference node for trusted development and protocol experiments.
+- [`demo`](demo/README.md) — minimal demo CLI for exercising a running reference node.
 
-These may move to separate repos once their lifecycle differs from `sphere-core`.
+These are still reference tools rather than production services, and they may move into separate repositories later if their release cadence or operational boundaries diverge from `sphere-core`.

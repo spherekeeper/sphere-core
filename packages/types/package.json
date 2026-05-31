@@ -1,6 +1,24 @@
 {
   "name": "@sphere/types",
   "version": "0.0.0",
+  "description": "Core Sphere protocol types, constants, and action payload definitions.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "packages/types"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/packages/types#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "types",
+    "action-payloads"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

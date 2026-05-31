@@ -1,6 +1,25 @@
 {
   "name": "@sphere/node",
   "version": "0.0.0",
+  "description": "Minimal local reference node for Sphere core experiments.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "apps/node"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/apps/node#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "node",
+    "runtime",
+    "fastify"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

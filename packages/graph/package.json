@@ -1,6 +1,24 @@
 {
   "name": "@sphere/graph",
   "version": "0.0.0",
+  "description": "In-memory Sphere graph projection helpers.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "packages/graph"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/packages/graph#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "projection",
+    "replay"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

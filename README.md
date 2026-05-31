@@ -62,13 +62,22 @@ pnpm typecheck
 - [Architecture](docs/architecture.md)
 - [Reference Node API](docs/api.md)
 - [Events and Actions](docs/events-and-actions.md)
-- [Demo CLI](apps/demo/README.md)
 - [Node Runtime](docs/node-runtime.md)
 - [Testing](docs/testing.md)
 - [Command Policy](docs/command-policy.md)
 - [Authorization Roadmap](docs/authorization-roadmap.md)
 - [Runtime Security Boundary](docs/runtime-security-boundary.md)
 - [Protocol Versioning](docs/protocol-versioning.md)
+- [Package Conventions](docs/package-conventions.md)
+- [Apps Overview](apps/README.md)
+- [Packages Overview](packages/README.md)
+- [Demo CLI](apps/demo/README.md)
+
+## Community
+
+- [Contributing](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## License
 

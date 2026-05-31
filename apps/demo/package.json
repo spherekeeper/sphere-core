@@ -1,6 +1,24 @@
 {
   "name": "@sphere/demo",
   "version": "0.0.0",
+  "description": "Minimal demo client for a running Sphere reference node.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "apps/demo"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/apps/demo#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "demo",
+    "cli"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

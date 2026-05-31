@@ -1,6 +1,25 @@
 {
   "name": "@sphere/events",
   "version": "0.0.0",
+  "description": "Canonical serialization helpers for Sphere protocol values and events.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "packages/events"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/packages/events#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "events",
+    "serialization",
+    "hashing"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

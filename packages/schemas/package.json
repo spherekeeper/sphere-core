@@ -1,6 +1,25 @@
 {
   "name": "@sphere/schemas",
   "version": "0.0.0",
+  "description": "Runtime validation helpers for Sphere draft protocol objects.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherekeeper/sphere-core.git",
+    "directory": "packages/schemas"
+  },
+  "homepage": "https://github.com/spherekeeper/sphere-core/tree/main/packages/schemas#readme",
+  "bugs": {
+    "url": "https://github.com/spherekeeper/sphere-core/issues"
+  },
+  "keywords": [
+    "sphere",
+    "event-sourcing",
+    "graph",
+    "protocol",
+    "schemas",
+    "validation",
+    "ajv"
+  ],
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
