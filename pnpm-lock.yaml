@@ -18,6 +18,22 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.41)
 
+  apps/demo:
+    dependencies:
+      '@sphere/commands':
+        specifier: workspace:*
+        version: link:../../packages/commands
+      '@sphere/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+    devDependencies:
+      '@sphere/node':
+        specifier: workspace:*
+        version: link:../node
+      tsx:
+        specifier: ^4.22.3
+        version: 4.22.3
+
   apps/node:
     dependencies:
       '@sphere/commands':

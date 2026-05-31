@@ -259,6 +259,7 @@ Entity and identity single-resource lookups return `404` with `entity_not_found`
 - [Reference Node API](./api.md)
 - [Events and Actions](./events-and-actions.md)
 - [Command Policy](./command-policy.md)
+- [Authorization Roadmap](./authorization-roadmap.md)
 - [Runtime Security Boundary](./runtime-security-boundary.md)
 
 ## Operational notes

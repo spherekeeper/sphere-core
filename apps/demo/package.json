@@ -1,0 +1,24 @@
+{
+  "name": "@sphere/demo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": {
+    "sphere-demo": "./src/cli.ts"
+  },
+  "scripts": {
+    "demo": "tsx src/cli.ts",
+    "test": "cd ../.. && vitest run apps/demo/test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@sphere/commands": "workspace:*",
+    "@sphere/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@sphere/node": "workspace:*",
+    "tsx": "^4.22.3"
+  }
+}

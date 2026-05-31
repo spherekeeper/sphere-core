@@ -40,7 +40,7 @@ Content-Type: application/json
 { "error": "unauthorized" }
 ```
 
-The bearer token is a trusted-development gate only. It is not actor authorization.
+The bearer token is a trusted-development gate only. It is not actor authorization. See [Authorization Roadmap](./authorization-roadmap.md) for the future caller/actor/chain authorization direction.
 
 ## Common conventions
 
