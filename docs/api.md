@@ -538,4 +538,4 @@ Stable endpoint-level error values currently emitted by the reference node:
 
 ## Contract status
 
-This is the contract for the current private reference node. It is stable enough for internal clients and demos, but still pre-production. If an endpoint shape changes, update this document, `docs/node-runtime.md`, and route tests in `apps/node/test/node.test.ts` in the same change.
+This is the contract for the current reference node. It is stable enough for early clients and demos, but still pre-production. If an endpoint shape changes, update this document, `docs/node-runtime.md`, and route tests in `apps/node/test/node.test.ts` in the same change.

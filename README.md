@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/spherekeeper/sphere-core/actions/workflows/ci.yml/badge.svg)](https://github.com/spherekeeper/sphere-core/actions/workflows/ci.yml)
 
-Private implementation workspace for Sphere core protocol schemas, TypeScript reference packages, and the first reference node experiments.
+Sphere core protocol schemas, TypeScript reference packages, and an early reference node/runtime.
 
-This repo is intentionally early and private. It exists to extract and stabilize the proven graph, identity, event, and adapter lessons from the existing Sphere Discord bot and graph service prototypes.
+This repo exists to extract and stabilize the proven graph, identity, event, and adapter lessons from earlier Sphere prototypes so they can be reused by real applications.
 
 ## Current goal
 
@@ -33,15 +33,13 @@ docs/        Development and architecture notes for this repo.
 
 ## Legacy source material
 
-The current implementation plan is based on these existing prototypes:
+The current implementation plan is based on earlier Sphere prototypes:
 
-```text
-/data/tenants/sphere/discord-infrastructure/sphere-system
-/data/tenants/sphere/web3-infrastructure/alpha_v0.1_firstprototype/sphere-graph
-/data/tenants/sphere/web3-infrastructure/alpha_v0.1_firstprototype/sphere-web
-```
+- a legacy Discord bot/runtime;
+- an earlier graph-service prototype;
+- an earlier web-app prototype.
 
-Do not copy these wholesale. Extract concepts, tests, and migration fixtures deliberately.
+See [`references/legacy-sources.md`](references/legacy-sources.md) for the extraction stance. Do not copy old systems wholesale; extract concepts, tests, and migration fixtures deliberately.
 
 ## Development
 
@@ -52,6 +50,12 @@ pnpm install
 pnpm test
 pnpm typecheck
 ```
+
+## Distribution status
+
+- Early applications can integrate these components today, primarily by source/workspace consumption inside a monorepo or direct repository checkout.
+- The packages are still workspace/source packages today; npm publishing and semver release workflow are not set up yet.
+- `apps/node` and `apps/demo` are reference implementations, not production services.
 
 ## Documentation
 

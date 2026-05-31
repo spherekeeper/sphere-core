@@ -1,12 +1,10 @@
 # Legacy Sources
 
-The initial Sphere Core implementation is informed by existing prototypes:
+The initial Sphere Core implementation is informed by earlier Sphere prototypes:
 
-```text
-/data/tenants/sphere/discord-infrastructure/sphere-system
-/data/tenants/sphere/web3-infrastructure/alpha_v0.1_firstprototype/sphere-graph
-/data/tenants/sphere/web3-infrastructure/alpha_v0.1_firstprototype/sphere-web
-```
+- a legacy Discord bot/runtime;
+- an earlier graph-service prototype;
+- an earlier web-app prototype.
 
 Use these as source material for concepts and tests, not as code to blindly copy.
 
