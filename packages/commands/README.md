@@ -52,6 +52,8 @@ Before creating an event, `createCommandEvent` enforces the built-in command pol
 
 Use `validateCommandPolicy(command)` when accepting untrusted or hand-built commands. It returns `{ ok: true }` or `{ ok: false, errors }` with stable error codes and JSON-style paths.
 
+The full policy and app-specific handler boundary are documented in [`docs/command-policy.md`](../../docs/command-policy.md).
+
 Current built-in policy checks for known actions:
 
 - `entity.create`, `entity.update`, `entity.delete` must use `resourceType: "entity"`.

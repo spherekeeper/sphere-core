@@ -53,6 +53,15 @@ pnpm test
 pnpm typecheck
 ```
 
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Node Runtime](docs/node-runtime.md)
+- [Testing](docs/testing.md)
+- [Command Policy](docs/command-policy.md)
+- [Runtime Security Boundary](docs/runtime-security-boundary.md)
+- [Protocol Versioning](docs/protocol-versioning.md)
+
 ## Status
 
 The first kernel is implemented and test-covered:
