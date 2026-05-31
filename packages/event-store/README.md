@@ -2,6 +2,8 @@
 
 Event store abstractions for Sphere event chains.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 ## Implementations
 
 ### In-memory

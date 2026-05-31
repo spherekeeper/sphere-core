@@ -2,6 +2,8 @@
 
 Reusable TypeScript packages for Sphere core.
 
+These directories are currently workspace/source packages inside the `sphere-core` monorepo. They are not published to npm yet, and their current package metadata is aimed at local workspace consumption and direct repository checkout.
+
 Current packages:
 
 - [`types`](types/README.md) — shared protocol types, constants, and action payload definitions.

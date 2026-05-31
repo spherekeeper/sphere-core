@@ -2,6 +2,8 @@
 
 UUIDv7-compatible identifier helpers for Sphere protocol objects.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 ## Exports
 
 - `createId(options?)` — generate a lowercase UUIDv7-compatible Sphere ID.

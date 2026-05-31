@@ -2,6 +2,8 @@
 
 Command-to-event helpers plus reference-node client utilities for Sphere.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 This package is the first ergonomic layer above raw events. It builds typed `Command` records for common graph mutations, converts those commands into hash-linked events, submits commands or event batches to a Sphere reference node, and reads back health/runtime/event/graph responses from the current HTTP API.
 
 ## Supported command helpers

@@ -2,6 +2,8 @@
 
 Core Sphere protocol types, constants, and action payload definitions.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 This package currently holds the shared draft protocol vocabulary used by the rest of the workspace, including:
 
 - protocol and schema version constants;

@@ -2,6 +2,8 @@
 
 In-memory Sphere graph projection helpers.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 This package replays verified event chains into queryable entity and edge maps.
 
 The current projection supports:

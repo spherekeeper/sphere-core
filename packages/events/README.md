@@ -2,6 +2,8 @@
 
 Canonical serialization helpers for Sphere protocol values and events.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 ## Current scope
 
 This package currently defines deterministic serialization only:

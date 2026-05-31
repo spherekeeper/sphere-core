@@ -2,6 +2,8 @@
 
 Minimal demo client for a running Sphere reference node.
 
+This is currently a workspace/source app in the `sphere-core` monorepo. It is not published to npm yet and should be treated as reference/demo tooling.
+
 The demo flow intentionally stays small:
 
 1. build an `entity.create` command;

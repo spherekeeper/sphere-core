@@ -2,6 +2,8 @@
 
 Runtime validation helpers for Sphere draft protocol objects.
 
+This is currently a workspace/source package in the `sphere-core` monorepo. It is not published to npm yet.
+
 Exports JSON Schema objects and parse/validate helpers for:
 
 - `Entity`
