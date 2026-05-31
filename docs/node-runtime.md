@@ -20,7 +20,7 @@ Start the node with ephemeral memory storage:
 pnpm --filter @sphere/node start
 ```
 
-The default listener is `0.0.0.0:3080`. Check health and runtime metadata:
+The default listener is `127.0.0.1:3080`. Check health and runtime metadata:
 
 ```bash
 curl -s http://127.0.0.1:3080/health
@@ -41,10 +41,12 @@ Expected metadata shape:
 
 Configure the runtime with environment variables:
 
-- `SPHERE_NODE_HOST`: listen host. Defaults to `0.0.0.0`.
+- `SPHERE_NODE_HOST`: listen host. Defaults to `127.0.0.1`.
 - `SPHERE_NODE_PORT`: listen port. Defaults to `3080`. Must be an integer from `0` through `65535`.
 - `SPHERE_NODE_DB`: optional SQLite database path. Omit or set to an empty value for memory storage.
 - `SPHERE_NODE_BEARER_TOKEN`: optional trusted-development bearer token for `/chains/*` endpoints.
+
+To bind beyond localhost for a trusted development deployment, set `SPHERE_NODE_HOST` explicitly (for example `0.0.0.0`) and put the node behind the network and transport protections described in [Runtime Security Boundary](./runtime-security-boundary.md).
 
 Run on localhost with SQLite persistence:
 

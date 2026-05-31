@@ -28,13 +28,13 @@ Security reports are most useful when they affect code or documented behavior cu
 
 Please do **not** post full exploit details in a public GitHub issue.
 
-A dedicated private security reporting channel has not been published in this repository yet.
+Use the most private reporting path available in this order:
 
-Until one is added, use the least-public path available:
+1. if this repository has GitHub private vulnerability reporting / security advisories enabled, use the repository's **Report a vulnerability** flow;
+2. otherwise, use the repository owner's private GitHub contact path if one is available;
+3. if neither private path is available yet, open a minimal public issue requesting a private reporting channel **without** including exploit details, then share the full report only after a private path has been established.
 
-1. first check whether the repository owner has a private contact route available via GitHub;
-2. if no private contact route is available, open a minimal public issue requesting a private reporting channel **without** including exploit details;
-3. share the full report only after a private path has been established.
+Maintainers: before or immediately after public launch, enable a dedicated private reporting route in repository settings so reporters do not have to fall back to step 3.
 
 When you do send the report, include:
 

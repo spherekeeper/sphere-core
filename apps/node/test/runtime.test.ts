@@ -30,22 +30,22 @@ class FakeProcess extends EventEmitter {
 describe('Sphere node runtime', () => {
   it('builds default memory config from environment', () => {
     expect(createNodeRuntimeConfig({})).toEqual({
-      host: '0.0.0.0',
+      host: '127.0.0.1',
       port: 3080,
       storage: { kind: 'memory' },
     });
   });
 
-  it('builds SQLite and bearer-token config from environment and validates port', () => {
+  it('builds SQLite and bearer-token config from environment, preserves explicit host overrides, and validates port', () => {
     const config = createNodeRuntimeConfig({
       SPHERE_NODE_DB: './sphere-events.sqlite',
-      SPHERE_NODE_HOST: '127.0.0.1',
+      SPHERE_NODE_HOST: '0.0.0.0',
       SPHERE_NODE_PORT: '4090',
       SPHERE_NODE_BEARER_TOKEN: 'dev-secret',
     });
 
     expect(config).toEqual({
-      host: '127.0.0.1',
+      host: '0.0.0.0',
       port: 4090,
       storage: { kind: 'sqlite', databasePath: './sphere-events.sqlite' },
       bearerToken: 'dev-secret',

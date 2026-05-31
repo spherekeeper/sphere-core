@@ -57,7 +57,7 @@ const defaultLogger: NodeRuntimeLogger = {
 
 export function createNodeRuntimeConfig(env: NodeJS.ProcessEnv = process.env): NodeRuntimeConfig {
   const port = parseNodePort(env.SPHERE_NODE_PORT ?? '3080');
-  const host = env.SPHERE_NODE_HOST ?? '0.0.0.0';
+  const host = env.SPHERE_NODE_HOST ?? '127.0.0.1';
   const databasePath = env.SPHERE_NODE_DB;
   const bearerToken = env.SPHERE_NODE_BEARER_TOKEN;
 

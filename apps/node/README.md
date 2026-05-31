@@ -15,7 +15,7 @@ pnpm --filter @sphere/node typecheck
 
 ## Running locally
 
-Start the node with memory storage on the default host/port (`0.0.0.0:3080`):
+Start the node with memory storage on the default host/port (`127.0.0.1:3080`):
 
 ```bash
 pnpm --filter @sphere/node start
@@ -34,7 +34,7 @@ The package also exposes a local `sphere-node` bin for workspace/package-manager
 
 Environment variables:
 
-- `SPHERE_NODE_HOST`: listen host, defaults to `0.0.0.0`
+- `SPHERE_NODE_HOST`: listen host, defaults to `127.0.0.1`
 - `SPHERE_NODE_PORT`: listen port, defaults to `3080`
 - `SPHERE_NODE_DB`: optional SQLite database path; omitted means memory storage
 - `SPHERE_NODE_BEARER_TOKEN`: optional trusted-development bearer token for `/chains/*` endpoints; omitted means no app-level auth
@@ -68,6 +68,8 @@ GET  /chains/:chainId/graph/diagnostics
 `GET /node/info` reports the active storage backend as either `memory` or `sqlite`.
 
 This reference node is intended for local/trusted development. By default, it does not implement authentication, authorization, or rate limiting. Setting `SPHERE_NODE_BEARER_TOKEN` requires a matching bearer `Authorization` header on `/chains/*` endpoints, but this is still only a development gate; do not expose it to untrusted networks without stronger controls. See [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md) for the current boundary decision and pre-exposure checklist.
+
+To bind beyond localhost for a trusted development setup, set `SPHERE_NODE_HOST` explicitly (for example `0.0.0.0`) and place the node behind the network boundary and transport protections described in [`docs/runtime-security-boundary.md`](../../docs/runtime-security-boundary.md).
 
 ### Ranged event reads
 

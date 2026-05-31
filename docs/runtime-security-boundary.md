@@ -6,7 +6,7 @@ The current Sphere reference node is a local/trusted-development runtime. It is 
 
 Keep the reference node unauthenticated by default, but make the boundary explicit and support an optional trusted-development bearer-token gate:
 
-- Bind only in trusted environments.
+- Default to localhost binding; require an explicit host override for wider exposure.
 - Do not expose the node directly to untrusted networks.
 - Treat all write endpoints as trusted-local developer APIs.
 - Add authentication, authorization, and rate limiting before remote or multi-user deployment.

@@ -36,7 +36,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported through the repository owner's available GitHub contact path or any other contact route published in repository settings.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported through the repository owner's available GitHub contact path or any other private contact route published in repository settings.
 
 If no private contact route is available, open a minimal issue requesting one without posting sensitive personal details publicly.
 
