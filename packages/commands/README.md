@@ -10,8 +10,11 @@ This package is the first ergonomic layer above raw events. It builds typed `Com
 
 - `createEntityCreateCommand({ actorId, entity })`
 - `createEntityUpdateCommand({ actorId, entityId, patch })`
+- `createEntityDeleteCommand({ actorId, entityId })`
 - `createIdentityLinkCommand({ actorId, identityLink })`
+- `createIdentityUnlinkCommand({ actorId, identityLinkId })`
 - `createEdgeCreateCommand({ actorId, edge })`
+- `createEdgeDeleteCommand({ actorId, edgeId })`
 
 All helpers accept optional:
 

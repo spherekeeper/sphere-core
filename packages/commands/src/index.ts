@@ -21,12 +21,24 @@ export interface EntityUpdateCommandOptions extends CommandFactoryOptions {
   patch: JsonObject;
 }
 
+export interface EntityDeleteCommandOptions extends CommandFactoryOptions {
+  entityId: string;
+}
+
 export interface IdentityLinkCommandOptions extends CommandFactoryOptions {
   identityLink: IdentityLink;
 }
 
+export interface IdentityUnlinkCommandOptions extends CommandFactoryOptions {
+  identityLinkId: string;
+}
+
 export interface EdgeCreateCommandOptions extends CommandFactoryOptions {
   edge: Edge;
+}
+
+export interface EdgeDeleteCommandOptions extends CommandFactoryOptions {
+  edgeId: string;
 }
 
 export interface CreateCommandEventOptions {
@@ -218,6 +230,16 @@ export function createEntityUpdateCommand(options: EntityUpdateCommandOptions): 
   });
 }
 
+export function createEntityDeleteCommand(options: EntityDeleteCommandOptions): Command {
+  return createCommand({
+    ...options,
+    action: 'entity.delete',
+    resourceType: 'entity',
+    resourceId: options.entityId,
+    payload: {},
+  });
+}
+
 export function createIdentityLinkCommand(options: IdentityLinkCommandOptions): Command {
   return createCommand({
     ...options,
@@ -228,6 +250,16 @@ export function createIdentityLinkCommand(options: IdentityLinkCommandOptions): 
   });
 }
 
+export function createIdentityUnlinkCommand(options: IdentityUnlinkCommandOptions): Command {
+  return createCommand({
+    ...options,
+    action: 'identity.unlink',
+    resourceType: 'identity_link',
+    resourceId: options.identityLinkId,
+    payload: {},
+  });
+}
+
 export function createEdgeCreateCommand(options: EdgeCreateCommandOptions): Command {
   return createCommand({
     ...options,
@@ -235,6 +267,16 @@ export function createEdgeCreateCommand(options: EdgeCreateCommandOptions): Comm
     resourceType: 'edge',
     resourceId: options.edge.id,
     payload: { edge: options.edge },
+  });
+}
+
+export function createEdgeDeleteCommand(options: EdgeDeleteCommandOptions): Command {
+  return createCommand({
+    ...options,
+    action: 'edge.delete',
+    resourceType: 'edge',
+    resourceId: options.edgeId,
+    payload: {},
   });
 }
 

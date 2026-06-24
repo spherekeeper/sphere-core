@@ -10,7 +10,10 @@ import {
   createEntityCreateCommand,
   createEntityUpdateCommand,
   createIdentityLinkCommand,
+  createIdentityUnlinkCommand,
   createEdgeCreateCommand,
+  createEdgeDeleteCommand,
+  createEntityDeleteCommand,
   validateCommandPolicy,
   CommandPolicyError,
 } from '../src/index.js';
@@ -89,12 +92,36 @@ describe('@sphere/commands', () => {
       createId: fixedIds('019e42ae-9c00-7000-8000-000000000202'),
     });
     const link = createIdentityLinkCommand({ actorId, identityLink: identityLink(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000203') });
+    const unlink = createIdentityUnlinkCommand({
+      actorId,
+      identityLinkId,
+      reason: 'account disconnected',
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000213'),
+    });
     const createEdge = createEdgeCreateCommand({ actorId, edge: edge(), now, createId: fixedIds('019e42ae-9c00-7000-8000-000000000204') });
+    const deleteEdge = createEdgeDeleteCommand({
+      actorId,
+      edgeId,
+      reason: 'relationship removed',
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000214'),
+    });
+    const deleteEntity = createEntityDeleteCommand({
+      actorId,
+      entityId,
+      reason: 'profile removed',
+      now,
+      createId: fixedIds('019e42ae-9c00-7000-8000-000000000215'),
+    });
 
     expect(create).toMatchObject({ action: 'entity.create', resourceType: 'entity', resourceId: entityId, payload: { entity: entity() } });
     expect(update).toMatchObject({ action: 'entity.update', resourceType: 'entity', resourceId: entityId, payload: { entity: { name: 'Updated', metadata: { focus: 'protocol' } } }, reason: 'profile edit' });
     expect(link).toMatchObject({ action: 'identity.link', resourceType: 'identity_link', resourceId: identityLinkId, payload: { identityLink: identityLink() } });
+    expect(unlink).toMatchObject({ action: 'identity.unlink', resourceType: 'identity_link', resourceId: identityLinkId, payload: {}, reason: 'account disconnected' });
     expect(createEdge).toMatchObject({ action: 'edge.create', resourceType: 'edge', resourceId: edgeId, payload: { edge: edge() } });
+    expect(deleteEdge).toMatchObject({ action: 'edge.delete', resourceType: 'edge', resourceId: edgeId, payload: {}, reason: 'relationship removed' });
+    expect(deleteEntity).toMatchObject({ action: 'entity.delete', resourceType: 'entity', resourceId: entityId, payload: {}, reason: 'profile removed' });
   });
 
   it('turns commands into hash-linked events', () => {

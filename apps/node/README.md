@@ -114,8 +114,6 @@ Invalid range query parameters return `400` with `invalid_event_range`.
 
 Example request:
 
-If `SPHERE_NODE_BEARER_TOKEN` is set, include the matching bearer `Authorization` header as well.
-
 ```bash
 curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/commands \
   -H 'content-type: application/json' \
@@ -132,6 +130,12 @@ curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/comman
       "schemaVersion": "0.1.0"
     }
   }'
+```
+
+If `SPHERE_NODE_BEARER_TOKEN` is set, include the matching bearer header on this and every other `/chains/*` request:
+
+```bash
+-H 'authorization: Bearer TOKEN_VALUE'
 ```
 
 Success response shape:

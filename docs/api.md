@@ -26,6 +26,13 @@ By default, the reference node does not require authentication.
 
 If `SPHERE_NODE_BEARER_TOKEN` is configured, every `/chains/*` endpoint requires an `Authorization` header using the HTTP bearer-token scheme and the configured token value.
 
+```bash
+curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/events \
+  -H 'authorization: Bearer TOKEN_VALUE'
+```
+
+The endpoint examples below omit this header for readability; add it to every `/chains/*` request when the bearer-token gate is enabled.
+
 Unauthenticated endpoints even when the token is configured:
 
 - `GET /health`
