@@ -135,7 +135,7 @@ curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/comman
 If `SPHERE_NODE_BEARER_TOKEN` is set, include the matching bearer header on this and every other `/chains/*` request:
 
 ```bash
--H 'authorization: Bearer TOKEN_VALUE'
+-H 'authorization: Bearer ***'
 ```
 
 Success response shape:
