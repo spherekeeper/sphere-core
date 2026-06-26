@@ -67,7 +67,7 @@ Then include a matching `authorization` header on chain endpoints. The header va
 
 ```bash
 curl -s http://127.0.0.1:3080/chains/019e42ae-9c00-7000-8000-000000000000/events \
-  -H 'authorization: Bearer ***'
+  -H 'authorization: Bearer TOKEN_VALUE'
 ```
 
 The endpoint examples below omit the header for readability. If the bearer-token gate is enabled, add the same `authorization` header to every `/chains/*` request.
